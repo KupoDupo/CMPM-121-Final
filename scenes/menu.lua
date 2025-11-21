@@ -1,4 +1,5 @@
 local menu_scene = {} -- This is the scene table Scenery will use
+local SceneryInit = require("scenery")
 
 -- Create table for buttons and function to create the buttons
 local buttons = {}
@@ -21,7 +22,7 @@ function menu_scene:load()
     
     -- Create the "Play" button. 
     table.insert(buttons, newButton(100, 100, 150, 40, "Play", function()
-        -- self.setScene("game") 
+        self.setScene("room1") 
         print("Play button clicked! (Implement scene switch here)") 
     end))
 
