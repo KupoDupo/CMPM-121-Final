@@ -4,7 +4,7 @@ local character = require('character')
 local player;
 
 function room1_scene:load()
-  player = character.new('player', 1, 1)
+  player = character.new('player', 1, 1, 1, "3DreamEngine/extensions/physics/shapes/cylinder.lua")
 end
   
 function room1_scene:draw()
