@@ -54,19 +54,20 @@ function scene:draw()
     love.graphics.print("Room 1 - Click to Move", 10, 10)
 end
 
-function scene:mousepressed(x, y, button)
+function scene:mousepressed(mouseX, mouseY, button)
     if button == 1 and player then
         local width, height = love.graphics.getDimensions()
-        local dx = (x - width/2) / (height/2)
-        local dy = (y - height/2) / (height/2)
         
-        -- Adjust these numbers if the mouse click feels "off"
-        local zoomScale = 12 
-        
-        local clickX = player:getX() + dx * zoomScale
-        local clickZ = player:getZ() + (dy + 0.5) * zoomScale -- +0.5 accounts for camera angle
-        
-        player:walkTo(clickX, clickZ)
+        -- Convert screen click to -1..1 range
+        local nx = (mouseX / width) * 2  - 2
+        local nz = (mouseY / height) * 2 - 2
+
+        -- Scale and flip to match your floor coordinates
+        local scale = 10
+        local targetX = -nx * scale
+        local targetZ = -nz * scale  -- flip Z because screen y goes down
+
+        player:walkTo(targetX, targetZ)
     end
 end
 
