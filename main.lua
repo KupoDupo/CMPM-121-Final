@@ -3,6 +3,8 @@ local SceneryInit = require("scenery")
 local scenery = SceneryInit("menu") 
 scenery:hook(love)
 
+local bump = require 'bump-3dpd'
+
 local character = {};
 -- Creates character
 function character.new(name)
