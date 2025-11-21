@@ -94,6 +94,10 @@ function character.new(name, startX, startY, startZ)
   function self:getName()
     return name
   end
+  
+  function self:getObject()
+    return object
+  end
 
   return self
 end
