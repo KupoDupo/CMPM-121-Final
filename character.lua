@@ -80,7 +80,7 @@ function character.new(name, startX, startY, startZ)
     local isMoving = false
 
   -- This looks for "player.dae" in your project folder.
-    local object = dream:loadObject("player")
+    local object = dream:loadObject("assets/player")
     
     -- Apply Red Shiny Material
     local mat = dream:newMaterial()
