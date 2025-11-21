@@ -1,5 +1,4 @@
 local menu_scene = {} -- This is the scene table Scenery will use
-local SceneryInit = require("scenery")
 
 -- Create table for buttons and function to create the buttons
 local buttons = {}
@@ -22,26 +21,32 @@ function menu_scene:load()
     
     -- Create the "Play" button. 
     table.insert(buttons, newButton(100, 100, 150, 40, "Play", function()
-        self.setScene("room1") 
-        print("Play button clicked! (Implement scene switch here)") 
+        scenery.setScene("room1") 
+        print("Play button clicked!") 
     end))
 
     -- Create the "Quit" button
     table.insert(buttons, newButton(100, 160, 150, 40, "Quit", function()
         love.event.quit()
     end))
+
+  titleFont = love.graphics.newFont(40)
 end
 
 function menu_scene:draw()
-    love.graphics.print("Escape the Haunted House!!!", 400, 300)
+    love.graphics.clear(0.1, 0.1, 0.2)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.setFont(titleFont)
+    love.graphics.printf("Escape the Haunted House!", 0, 300, love.graphics.getWidth(), "center")
     
+    love.graphics.setNewFont(14)
     for _, btn in pairs(buttons) do
         if btn.isPressed then
-            love.graphics.setColor(0.5, 0.5, 0.5) -- Pressed Color
+            love.graphics.setColor(0.4, 0.4, 0.4) -- Pressed Color
         elseif btn.isHovered then
-            love.graphics.setColor(0.7, 0.7, 0.7) -- Hover Color
+            love.graphics.setColor(0.6, 0.6, 0.6) -- Hover Color
         else
-            love.graphics.setColor(0.9, 0.9, 0.9) -- Default Color
+            love.graphics.setColor(0.8, 0.8, 0.8) -- Default Color
         end
             
         love.graphics.rectangle("fill", btn.x, btn.y, btn.width, btn.height)
