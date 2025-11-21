@@ -1,13 +1,15 @@
 local character = {};
+local TILESIZE = 32
 -- Creates character
-function character.new(name)
+function character.new(name, startX, startY)
     local self = {};
 
-    local x, y;
-    local name = name;
+    local x = startX
+    local y = startY
+    local name = name
 
     function self:draw()
-        love.graphics.rectangel('fill', x * TILESIZE, y * TILESIZE, TILESIZE, TILESIZE);
+        love.graphics.rectangle('fill', x * TILESIZE, y * TILESIZE, TILESIZE, TILESIZE);
     end
 
     function self:update(dt)
