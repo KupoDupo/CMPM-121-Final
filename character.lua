@@ -84,11 +84,31 @@ function character.new(name, startX, startY, startZ)
     
     -- Apply Red Shiny Material
     local mat = dream:newMaterial()
-    mat.color = {1.0, 0.0, 0.0, 1.0} 
-    mat.roughness = 0.2 -- Shiny!
-    mat.metallic = 0.0
-    object.material = mat
-    object:scale(0.5)
+    mat.color = {1.0, 0.0, 0.0, 1.0} -- Bright Red
+    mat.roughness = 0.2              -- Shiny (Low roughness)
+    mat.metallic = 0.0               -- Plastic-like
+    
+    mat.cullMode = "none" 
+
+    -- 3. Recursive Paint Function
+    -- Applies our double-sided material to every part of the model
+    local function paintRecursive(obj, material)
+        -- Paint meshes at this level
+        if obj.meshes then
+            for _, mesh in pairs(obj.meshes) do
+                mesh.material = material
+            end
+        end
+        
+        -- Dig deeper into children
+        if obj.objects then
+            for _, child in pairs(obj.objects) do
+                paintRecursive(child, material)
+            end
+        end
+    end
+
+    paintRecursive(object, mat)
 
     -- --- LOGIC ---
     function self:walkTo(tx, tz)

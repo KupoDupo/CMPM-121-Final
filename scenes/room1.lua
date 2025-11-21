@@ -10,6 +10,8 @@ function scene:load()
 
     -- Create Player
     player = Character.new("Hero", 0, 0, 0)
+    
+    sun = dream:newLight("sun", dream.vec3(10, 20, 10), dream.vec3(1, 1, 1), 1.5)
 end
 
 function scene:update(dt)
