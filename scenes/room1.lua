@@ -8,13 +8,8 @@ local sun
 function scene:load()
     love.graphics.setBackgroundColor(0.4, 0.6, 0.9)
 
-    -- Create Player (This now loads player.obj internally)
+    -- Create Player
     player = Character.new("Hero", 0, 0, 0)
-
-    -- Setup Light
-    -- Use bright intensity (1.5) to make sure we see the model
-    sun = dream:newLight("sun", dream.vec3(5, 10, 5), dream.vec3(1, 0.9, 0.8), 1.5)
-    sun:addNewShadow()
 end
 
 function scene:update(dt)
@@ -61,14 +56,12 @@ end
 
 function scene:mousepressed(x, y, button)
     if button == 1 and player then
-        -- Simple "Top-Down" Raycast Approximation
-        -- Since real raycasting was crashing, we estimate based on screen position
         local width, height = love.graphics.getDimensions()
         local dx = (x - width/2) / (height/2)
         local dy = (y - height/2) / (height/2)
         
         -- Adjust these numbers if the mouse click feels "off"
-        local zoomScale = 12.0 
+        local zoomScale = 12 
         
         local clickX = player:getX() + dx * zoomScale
         local clickZ = player:getZ() + (dy + 0.5) * zoomScale -- +0.5 accounts for camera angle

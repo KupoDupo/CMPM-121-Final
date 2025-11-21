@@ -4,6 +4,6 @@ function love.conf(t)
     t.window.height = 720
     t.window.resizable = true
     
-    -- This enables 3D depth testing
+    -- Thing that enables 3D
     t.window.depth = 24 
 end
