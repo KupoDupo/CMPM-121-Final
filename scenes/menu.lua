@@ -1,4 +1,3 @@
--- scenes/menu.lua
 local menu_scene = {} -- This is the scene table Scenery will use
 
 -- Create table for buttons and function to create the buttons
@@ -16,18 +15,12 @@ local function newButton(x, y, width, height, text, callback)
     }
 end
 
--- =============================================
--- SCENERY CALLBACKS (Replaces global love.load, love.draw, etc.)
--- =============================================
-
 function menu_scene:load()
     -- Clear buttons table just in case the scene loads multiple times
     buttons = {} 
     
     -- Create the "Play" button. 
-    -- If you want to switch to a 'game' scene, you must use self.setScene here.
     table.insert(buttons, newButton(100, 100, 150, 40, "Play", function()
-        -- Assuming you have a 'game.lua' scene, use self.setScene to switch.
         -- self.setScene("game") 
         print("Play button clicked! (Implement scene switch here)") 
     end))
