@@ -1,30 +1,36 @@
 local Character = require("character")
+local Eyeball = require("eyeball")
 
 local scene = {}
-
 local player
 local sun
+local item
 
 function scene:load()
-    love.graphics.setBackgroundColor(0.4, 0.6, 0.9)
+    love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
 
-    -- Create Player
     player = Character.new("Hero", 0, 0, 0)
     
-    sun = dream:newLight("sun", dream.vec3(10, 20, 10), dream.vec3(1, 1, 1), 1.5)
+    -- Spawn Eyeball at (3, 3)
+    eyeball = Eyeball.new(3, 3)
+
+    sun = dream:newLight("sun", dream.vec3(10, 10, 10), dream.vec3(1, 1, 1), 1.5)
+    sun:addNewShadow()
 end
 
 function scene:update(dt)
     if player then
         player:update(dt)
         
-        -- Camera Logic
+        -- Camera follows player
         dream.camera:resetTransform()
-        -- Position: Follow player with an offset
-        dream.camera:translate(player:getX(), 10, player:getZ() + 10)
-        -- Rotation: Look down at player
-        -- We use rotateX because lookAt() was buggy in your version
+        dream.camera:translate(player:getX(), 10, player:getZ() + 10) 
         dream.camera:rotateX(-0.8) 
+    end
+    
+    -- Spin eyeball
+    if eyeball and eyeball.exists then
+        eyeball.object:rotateY(dt)
     end
     
     dream:update(dt)
@@ -37,13 +43,16 @@ function scene:draw()
     if player then
         player:draw()
         
-        -- Draw Floor Grid using player object as a tile
+        -- Draw Eyeball
+        if eyeball then eyeball:draw() end
+        
+        -- Floor Grid
         local floorObj = player:getObject()
-        for x = -5, 5 do
-            for z = -5, 5 do
+        for x = -4, 4 do
+            for z = -4, 4 do
                 floorObj:resetTransform()
-                floorObj:translate(x * 2, -1, z * 2)
-                floorObj:scale(2, 0.1, 2) -- Flatten it
+                floorObj:translate(x * 3, -1, z * 3)
+                floorObj:scale(2.8, 0.1, 2.8)
                 dream:draw(floorObj)
             end
         end
@@ -53,15 +62,21 @@ function scene:draw()
     
     -- UI
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("Room 1 - Click to Move", 10, 10)
+    if eyeball and not eyeball.exists then
+        love.graphics.print("EYEBALL COLLECTED!", 10, 10)
+    else
+        love.graphics.print("Find the Eyeball...", 10, 10)
+    end
 end
 
+-- [[ UPDATED MOUSE LOGIC ]]
 function scene:mousepressed(mouseX, mouseY, button)
     if button == 1 and player then
         local width, height = love.graphics.getDimensions()
         
-        -- Convert screen click to -1..1 range
-        local nx = (mouseX / width) * 2  - 2
+        -- 1. YOUR CUSTOM MATH
+        -- Convert screen click to your specific coordinate system
+        local nx = (mouseX / width) * 2 - 2
         local nz = (mouseY / height) * 2 - 2
 
         -- Scale and flip to match your floor coordinates
@@ -69,7 +84,21 @@ function scene:mousepressed(mouseX, mouseY, button)
         local targetX = -nx * scale
         local targetZ = -nz * scale  -- flip Z because screen y goes down
 
-        player:walkTo(targetX, targetZ)
+        -- 2. EYEBALL PICKUP LOGIC
+        -- We check the distance between the clicked spot (targetX, targetZ) and the eyeball
+        local dist = 100
+        if eyeball and eyeball.exists then
+            dist = math.sqrt((targetX - eyeball.x)^2 + (targetZ - eyeball.z)^2)
+        end
+        
+        -- If clicked close enough (distance < 1.0), pick it up
+        if dist < 1.0 then
+            eyeball.exists = false
+            print("Eyeball collected!")
+        else
+            -- Otherwise, move the player
+            player:walkTo(targetX, targetZ)
+        end
     end
 end
 
