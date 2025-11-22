@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+# Pre-commit hook for CMPM 121 project (LÖVE/Lua)
+# Use command "luarocks install luacheck" in your terminal to install the linter
+# This hook runs linting checks before each commit
+
+echo "🔍 Running pre-commit checks..."
+
+# Check if luacheck is available
+if ! command -v luacheck &> /dev/null; then
+    echo "⚠️  luacheck is not installed or not in PATH"
+    echo "Installing luacheck is recommended: https://github.com/luarocks/luacheck, use "luarocks install luacheck" to install"
+    echo "You can skip this check by continuing, but linting is highly recommended"
+fi
+
+# Get staged Lua and Markdown files
+LUA_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.lua$')
+MD_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.md$')
+
+if [ -z "$LUA_FILES" ] && [ -z "$MD_FILES" ]; then
+    echo "✅ No files to check"
+    exit 0
+fi
+
+# Run luacheck on staged Lua files if available
+if command -v luacheck &> /dev/null; then
+    echo "🔎 Running Lua linter..."
+    if ! luacheck $LUA_FILES; then
+        echo "❌ Linting failed"
+        echo "Please fix the linting issues before committing"
+        exit 1
+    fi
+fi
+
+# Basic syntax check using Lua
+echo "📝 Checking Lua syntax..."
+if ! command -v lua &> /dev/null; then
+    echo "⚠️  Lua interpreter not found, skipping syntax check"
+else
+    for file in $LUA_FILES; do
+        if ! lua -c "$file" &> /dev/null; then
+            echo "❌ Syntax error in $file"
+            lua -c "$file"
+            exit 1
+        fi
+    done
+fi
+
+# Check markdown files
+if [ ! -z "$MD_FILES" ]; then
+    echo "📋 Checking Markdown files..."
+    for file in $MD_FILES; do
+        # Check for trailing whitespace (allow only exactly 2 spaces for markdown line breaks)
+        if grep -qE '[^[:space:]][[:space:]]$|[^[:space:]][[:space:]][[:space:]][[:space:]]' "$file"; then
+            echo "⚠️  Improper trailing whitespace found in $file"
+            echo "Use exactly 2 spaces for line breaks, or none for regular lines"
+        fi
+    done
+fi
+
+echo "✅ All pre-commit checks passed!"
+exit 0
