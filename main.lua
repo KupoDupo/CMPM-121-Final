@@ -1,6 +1,15 @@
+-- Scenery setup
 local SceneryInit = require("scenery")
+scenery = SceneryInit("menu")
 
--- "menu" is the scene key (a string)
-local scenery = SceneryInit("menu") 
+-- 3DreamEngine
+dream = require("3DreamEngine")
 
-scenery:hook(love)
+-- Other physics library (might delete later)
+local bump = require 'bump-3dpd'
+    
+function love.load()
+  dream:init()
+  scenery:hook(love)
+  scenery.setScene("menu")
+end
