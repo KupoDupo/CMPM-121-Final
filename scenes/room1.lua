@@ -24,8 +24,8 @@ function scene:update(dt)
         
         -- Camera follows player
         dream.camera:resetTransform()
-        dream.camera:translate(player:getX(), 10, player:getZ() + 10) 
-        dream.camera:rotateX(-0.8) 
+        dream.camera:translate(player:getX(), 10, player:getZ()) 
+        dream.camera:rotateX(-1.58) 
     end
     
     -- Spin eyeball
@@ -81,8 +81,8 @@ function scene:mousepressed(mouseX, mouseY, button)
 
         -- Scale and flip to match your floor coordinates
         local scale = 10
-        local targetX = -nx * scale
-        local targetZ = -nz * scale  -- flip Z because screen y goes down
+        local targetX = -nx * 16
+        local targetZ = -nz * 10  -- flip Z because screen y goes down
 
         -- 2. EYEBALL PICKUP LOGIC
         -- We check the distance between the clicked spot (targetX, targetZ) and the eyeball
