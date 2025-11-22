@@ -48,11 +48,11 @@ function scene:draw()
         
         -- Floor Grid
         local floorObj = player:getObject()
-        for x = -4, 4 do
-            for z = -4, 4 do
+        for x = -10, 10 do
+            for z = -10, 10 do
                 floorObj:resetTransform()
-                floorObj:translate(x * 3, -1, z * 3)
-                floorObj:scale(2.8, 0.1, 2.8)
+                --floorObj:translate(x * 3, -1, z * 3)
+                floorObj:scale(2, 0.1, 2)
                 dream:draw(floorObj)
             end
         end
@@ -76,8 +76,8 @@ function scene:mousepressed(mouseX, mouseY, button)
         
         -- 1. YOUR CUSTOM MATH
         -- Convert screen click to your specific coordinate system
-        local nx = (mouseX / width) * 2 - 2
-        local nz = (mouseY / height) * 2 - 2
+        local nx = (mouseX / width) * 2 - 1
+        local nz = (mouseY / height) * 2 - 1
 
         -- Scale and flip to match your floor coordinates
         local scale = 10
