@@ -24,8 +24,25 @@ jobs:
       - name: Create .love file
         run: |
           mkdir -p build
+          # Create the .love file by including specific directories and files
           cd build
-          zip -r game.love ../ -x ".*" ".git*" "build/*" ".github/*"
+          zip -r game.love \
+            ../main.lua \
+            ../conf.lua \
+            ../character.lua \
+            ../eyeball.lua \
+            ../scenery.lua \
+            ../bump-3dpd.lua \
+            ../3DreamEngine/ \
+            ../assets/ \
+            ../scenes/ \
+            -x "*/.*" "*/.DS_Store" "*/build/*" "*/.github/*" "*/docs/*"
+          
+          if [ ! -f game.love ] || [ ! -s game.love ]; then
+            echo "Error: game.love was not created or is empty"
+            ls -la
+            exit 1
+          fi
           ls -lh game.love
           cd ..
 
