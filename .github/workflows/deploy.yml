@@ -29,10 +29,18 @@ jobs:
       - name: Create .love file
         run: |
           mkdir -p build
-          cd build
-          zip -r game.love ../ -x ".*" ".git*" "build/*" ".github/*"
-          ls -lh game.love
-          cd ..
+          zip -r build/game.love \
+            main.lua \
+            conf.lua \
+            character.lua \
+            eyeball.lua \
+            scenery.lua \
+            bump-3dpd.lua \
+            3DreamEngine/ \
+            assets/ \
+            scenes/ \
+            -x "*/.*" "*/.DS_Store"
+          ls -lh build/game.love
 
       - name: Create release info page
         run: |
