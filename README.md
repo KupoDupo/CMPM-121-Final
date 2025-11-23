@@ -57,8 +57,56 @@ luarocks install --only-deps CMPM-121-Final-1.0-1.rockspec
 
 This will install luacheck locally for your project. After this you should be all good to go! 
 
-### Step 8
-Deployment stuff  
+### Step 8: Deployment & Release Process
+
+This repo uses GitHub Actions to automate building and deploying the game. The GitHub Pages site automatically fetches and displays the latest releases.
+
+#### Release Workflow
+
+1. **Commit your changes** to the `main` branch
+2. **Create a version tag** using semantic versioning:
+   ```bash
+   git tag v1.0.0
+   # or with a message (preferred):
+   git tag -a v1.0.0 -m "Initial release"
+   ```
+3. **Push the tag** to trigger automation:
+   ```bash
+   git push origin v1.0.0
+   ```
+4. **GitHub Actions runs automatically**:
+   - `build-release.yml` creates a `.love` file from your code
+   - Creates a GitHub Release with the `.love` file attached
+   - `deploy.yml` builds a web version and updates GitHub Pages
+
+#### Version Naming Convention
+
+Follow semantic versioning: `v<Major>.<Minor>.<Patch>`
+
+**Examples:**
+- `v1.0.0` - Initial release
+- `v1.0.1` - Bug fix on v1
+- `v1.1.0` - New features added on v1
+- `v2.0.0` - Major breaking changes from v1
+
+#### Verifying Your Release
+
+- Check the **Actions** tab to monitor build progress
+- Once complete, visit the **Releases** page to see your `.love` file
+- The **GitHub Pages site** will automatically display the new release
+- Players can download and play from: `https://kupodupo.github.io/CMPM-121-Final`
+
+#### Checking Your Tags
+
+View all existing tags:
+```bash
+git tag -l
+```
+
+Delete a tag locally (if needed):
+```bash
+git tag -d v1.0.0
+```
 
 ### What About Steps 4 and 6?
 Our intention for our first physics puzzle was that you would pick up an item (an eyeball, which currently looks like a white sphere) and then drop it on a button / pressure plate which would open a door to the next room.  Currently though the eyeball refuses to stay in place and follows the player sphere as it moves.  We eventually decided that we would need to work on this bug past the due date, which is why steps 4 and 6 are currently incomplete.
