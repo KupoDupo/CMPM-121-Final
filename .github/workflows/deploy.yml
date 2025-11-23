@@ -29,18 +29,15 @@ jobs:
       - name: Create .love file
         run: |
           mkdir -p build
-          zip -r build/game.love \
-            main.lua \
-            conf.lua \
-            character.lua \
-            eyeball.lua \
-            scenery.lua \
-            bump-3dpd.lua \
+          zip -9 -r build/game.love \
+            *.lua \
             3DreamEngine/ \
             assets/ \
             scenes/ \
-            -x "*/.*" "*/.DS_Store"
+            -x "*/.*" "*/.DS_Store" "*/__pycache__/*"
           ls -lh build/game.love
+          # Verify main.lua is at root of zip
+          unzip -l build/game.love | head -20
 
       - name: Create release info page
         run: |

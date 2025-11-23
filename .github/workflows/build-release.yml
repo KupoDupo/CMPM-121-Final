@@ -25,26 +25,21 @@ jobs:
         run: |
           mkdir -p build
           # Create the .love file by including specific directories and files
-          cd build
-          zip -r game.love \
-            ../main.lua \
-            ../conf.lua \
-            ../character.lua \
-            ../eyeball.lua \
-            ../scenery.lua \
-            ../bump-3dpd.lua \
-            ../3DreamEngine/ \
-            ../assets/ \
-            ../scenes/ \
-            -x "*/.*" "*/.DS_Store" "*/build/*" "*/.github/*" "*/docs/*"
+          zip -9 -r build/game.love \
+            *.lua \
+            3DreamEngine/ \
+            assets/ \
+            scenes/ \
+            -x "*/.*" "*/.DS_Store" "*/__pycache__/*"
           
-          if [ ! -f game.love ] || [ ! -s game.love ]; then
+          if [ ! -f build/game.love ] || [ ! -s build/game.love ]; then
             echo "Error: game.love was not created or is empty"
-            ls -la
+            ls -la build/
             exit 1
           fi
-          ls -lh game.love
-          cd ..
+          ls -lh build/game.love
+          # Verify main.lua is at root of zip
+          unzip -l build/game.love | head -20
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
