@@ -33,8 +33,32 @@ We used the [LÖVE](https://love2d.org/) engine along with the [3DreamEngine]() 
 ### Steps 5
 The player is currently represented by a red sphere, which you view from a topdown camera.  The player sphere will move towards wherever you click.
 
-### Steps 7 and 8
-deployment and commit stuff
+### Step 7
+This repo uses LuaRock's (the lua package manager) luacheck to check files and lint them. 
+
+**Setup Instructions:**
+
+First, install LuaRocks:
+#### Windows
+Download from [Luarocks](https://luarocks.org/)  
+OR  
+Use Chocolatey: `choco install luarocks`
+#### macOS
+Use Homebrew: `brew install luarocks`
+#### Linux
+Ubuntu/Debian: `sudo apt-get install luarocks`  
+Fedora: `sudo dnf install luarocks`  
+Arch: `sudo pacman -S luarocks`
+
+Then, install project dependencies:
+```bash
+luarocks install --only-deps CMPM-121-Final-1.0-1.rockspec
+```
+
+This will install luacheck locally for your project. After this you should be all good to go! 
+
+### Step 8
+Deployment stuff  
 
 ### What About Steps 4 and 6?
 Our intention for our first physics puzzle was that you would pick up an item (an eyeball, which currently looks like a white sphere) and then drop it on a button / pressure plate which would open a door to the next room.  Currently though the eyeball refuses to stay in place and follows the player sphere as it moves.  We eventually decided that we would need to work on this bug past the due date, which is why steps 4 and 6 are currently incomplete.
