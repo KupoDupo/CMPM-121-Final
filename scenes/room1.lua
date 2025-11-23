@@ -51,14 +51,15 @@ function room1_scene:draw()
         if eyeball then eyeball:draw() end
         
         -- Floor Grid
-        local floorObj = player:getObject()
-        for x = -10, 10 do
-            for z = -10, 10 do
-                floor_tile:resetTransform()
-                floor_tile:translate(x * 3, -1, z * 3)
-                floor_tile:scale(2, 0.1, 2)
-                dream:draw(floor_tile)
-            end
+        if floor_tile then
+          for x = -10, 10 do
+              for z = -10, 10 do
+                  floor_tile:resetTransform()
+                  floor_tile:translate(x * 3, -1, z * 3)
+                  floor_tile:scale(2, 0.1, 2)
+                  dream:draw(floor_tile)
+              end
+          end
         end
     end
     
