@@ -1,24 +1,27 @@
 local Character = require("character")
 local Eyeball = require("eyeball")
 
-local scene = {}
+local room1_scene = {}
 local player
 local sun
 local item
+local floor_tile
 
-function scene:load()
+function room1_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
 
     player = Character.new("Hero", 0, 0, 0)
     
     -- Spawn Eyeball at (3, 3)
     eyeball = Eyeball.new(3, 3)
+    
+    floor_tile = dream:loadObject("assets/cube")
 
     sun = dream:newLight("sun", dream.vec3(10, 10, 10), dream.vec3(1, 1, 1), 1.5)
     sun:addNewShadow()
 end
 
-function scene:update(dt)
+function room1_scene:update(dt)
     if player then
         player:update(dt)
         
@@ -34,9 +37,10 @@ function scene:update(dt)
     end
     
     dream:update(dt)
+    
 end
 
-function scene:draw()
+function room1_scene:draw()
     dream:prepare()
     dream:addLight(sun)
     
@@ -50,10 +54,10 @@ function scene:draw()
         local floorObj = player:getObject()
         for x = -10, 10 do
             for z = -10, 10 do
-                floorObj:resetTransform()
-                --floorObj:translate(x * 3, -1, z * 3)
-                floorObj:scale(2, 0.1, 2)
-                dream:draw(floorObj)
+                floor_tile:resetTransform()
+                floor_tile:translate(x * 3, -1, z * 3)
+                floor_tile:scale(2, 0.1, 2)
+                dream:draw(floor_tile)
             end
         end
     end
@@ -70,7 +74,7 @@ function scene:draw()
 end
 
 -- [[ UPDATED MOUSE LOGIC ]]
-function scene:mousepressed(mouseX, mouseY, button)
+function room1_scene:mousepressed(mouseX, mouseY, button)
     if button == 1 and player then
         local width, height = love.graphics.getDimensions()
         
@@ -99,7 +103,13 @@ function scene:mousepressed(mouseX, mouseY, button)
             -- Otherwise, move the player
             player:walkTo(targetX, targetZ)
         end
+        
+      if eyeball then
+        print("EYEBALL POS:", eyeball.x, eyeball.z, "EXISTS:", eyeball.exists)
+      else
+        print("NO EYEBALL VARIABLE!")
+      end
     end
 end
 
-return scene
+return room1_scene
