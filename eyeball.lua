@@ -63,9 +63,10 @@ function eyeball.new(x, z)
         self.object:translate(self.x, 1.0, self.z)
         
         -- Scale: 0.5 (Adjust if eye is too big/small)
-        self.object:scale(0.5)
+        self.object:scale(.2)
         
         -- Spin Animation
+        self.object:rotateZ(love.timer.getTime())
         self.object:rotateY(love.timer.getTime())
         
         dream:draw(self.object)

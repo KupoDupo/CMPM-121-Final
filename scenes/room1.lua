@@ -91,7 +91,7 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
         end
         
         -- If clicked close enough (distance < 1.0), pick it up
-        if dist < 1.5 then
+        if dist < .5 then
             eyeball.exists = false
             print("Eyeball collected!")
         else

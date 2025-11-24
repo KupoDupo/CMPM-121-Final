@@ -7,7 +7,7 @@ function character.new(name, startX, startY, startZ)
     local y = startY or 0
     local z = startZ or 0
     local targetX, targetZ = x, z
-    local speed = 4
+    local speed = 6
     local isMoving = false
 
   -- This looks for "player.dae" in your project folder.
