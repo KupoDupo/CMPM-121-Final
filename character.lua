@@ -11,7 +11,7 @@ function character.new(name, startX, startY, startZ)
     local isMoving = false
 
   -- This looks for "player.dae" in your project folder.
-    local object = dream:loadObject("assets/player")
+    local object = dream:loadObject("assets/human_model")
     
     -- Apply Red Shiny Material
     local mat = dream:newMaterial()
@@ -41,7 +41,7 @@ function character.new(name, startX, startY, startZ)
 
     paintRecursive(object, mat)
 
-    -- --- LOGIC ---
+    ----- LOGIC ----
     function self:walkTo(tx, tz)
         targetX, targetZ = tx, tz
         isMoving = true

@@ -70,6 +70,10 @@ function eyeball.new(x, z)
         
         dream:draw(self.object)
     end
+    
+    function self:getX() return x end
+    function self:getZ() return z end
+    function self:getObject() return object end
 
     return self
 end

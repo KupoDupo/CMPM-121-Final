@@ -13,7 +13,7 @@ function room1_scene:load()
     player = Character.new("Hero", 0, 0, 0)
     
     -- Spawn Eyeball at (3, 3)
-    eyeball = Eyeball.new(3, 3)
+    eyeball = Eyeball.new(1, 3)
     
     floor_tile = dream:loadObject("assets/cube")
 
@@ -27,13 +27,8 @@ function room1_scene:update(dt)
         
         -- Camera follows player
         dream.camera:resetTransform()
-        dream.camera:translate(player:getX(), 10, player:getZ()) 
+        dream.camera:translate(0, 10, 0) 
         dream.camera:rotateX(-1.58) 
-    end
-    
-    -- Spin eyeball
-    if eyeball and eyeball.exists then
-        eyeball.object:rotateY(dt)
     end
     
     dream:update(dt)
