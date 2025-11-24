@@ -28,7 +28,7 @@ function room1_scene:update(dt)
         -- Camera follows player
         dream.camera:resetTransform()
         dream.camera:translate(0, 10, 0) 
-        dream.camera:rotateX(-1.58) 
+        dream.camera:rotateX(-math.pi / 2) 
     end
     
     dream:update(dt)
