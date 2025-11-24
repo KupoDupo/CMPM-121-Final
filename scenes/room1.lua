@@ -80,9 +80,8 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
         local nz = (mouseY / height) * 2 - 1
 
         -- Scale and flip to match your floor coordinates
-        local scale = 10
-        local targetX = -nx * 16
-        local targetZ = -nz * 10  -- flip Z because screen y goes down
+        local targetX = nx * 18
+        local targetZ = nz * 16
 
         -- 2. EYEBALL PICKUP LOGIC
         -- We check the distance between the clicked spot (targetX, targetZ) and the eyeball
@@ -92,7 +91,7 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
         end
         
         -- If clicked close enough (distance < 1.0), pick it up
-        if dist < 1.0 then
+        if dist < 1.5 then
             eyeball.exists = false
             print("Eyeball collected!")
         else
@@ -105,6 +104,7 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
       else
         print("NO EYEBALL VARIABLE!")
       end
+      print("Clicked World Pos:", targetX, targetZ)
     end
 end
 
