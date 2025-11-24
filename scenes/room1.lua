@@ -81,7 +81,7 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
 
         -- Scale and flip to match your floor coordinates
         local targetX = nx * 18
-        local targetZ = nz * 16
+        local targetZ = nz * 18
 
         -- 2. EYEBALL PICKUP LOGIC
         -- We check the distance between the clicked spot (targetX, targetZ) and the eyeball
