@@ -13,6 +13,10 @@ local door_object
 local wall_left
 local wall_right
 local worldBounds = { minX = -12, maxX = 12, minZ = -12, maxZ = 12 }
+local inventory = {}
+local cannonLoaded = false
+local mouseWorldX, mouseWorldZ = 0, 0
+local isHoveringInteractive = false
 
 function room1_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
@@ -44,6 +48,17 @@ end
 function room1_scene:update(dt)
     if player then
         player:update(dt)
+        
+        -- Auto-pickup cannonball when player gets close
+        if cannonball and cannonball.exists then
+            local px, pz = player:getX(), player:getZ()
+            local distToCannonball = math.sqrt((px - cannonball.x)^2 + (pz - cannonball.z)^2)
+            if distToCannonball < 1.0 then
+                cannonball.exists = false
+                inventory.cannonball = true
+                print("Cannonball collected and added to inventory!")
+            end
+        end
         
         -- Camera follows player (lower height to zoom in)
         -- Fixed overhead camera (do not follow player)
@@ -163,12 +178,32 @@ function room1_scene:draw()
     
     dream:present()
     
+    -- Draw custom cursor if hovering over interactive object
+    if isHoveringInteractive then
+        local mx, my = love.mouse.getPosition()
+        love.graphics.setColor(1, 1, 0, 0.8) -- Yellow with transparency
+        love.graphics.circle("line", mx, my, 12, 20)
+        love.graphics.circle("line", mx, my, 10, 20)
+        love.graphics.setColor(1, 1, 1)
+    end
+    
     -- UI
     love.graphics.setColor(1, 1, 1)
-    if cannonball and not cannonball.exists then
-        love.graphics.print("CANNONBALL COLLECTED!", 10, 10)
+    love.graphics.print("Inventory:", 10, 10)
+    if inventory.cannonball then
+        love.graphics.print("- Cannonball", 10, 30)
+    end
+    
+    -- Objective display
+    if not inventory.cannonball then
+        love.graphics.print("Objective: Find the Cannonball", 10, 60)
+    elseif not cannonLoaded then
+        love.graphics.print("Objective: Load the Cannonball into the Cannon", 10, 60)
+        love.graphics.print("(Walk near the cannon and click it)", 10, 80)
+    elseif door and door.locked then
+        love.graphics.print("Objective: Right-click to aim and shoot the door", 10, 60)
     else
-        love.graphics.print("Find the Cannonball...", 10, 10)
+        love.graphics.print("Door unlocked! You can now pass through.", 10, 60)
     end
 end
 
@@ -194,16 +229,31 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
 
         -- 2. CANNONBALL PICKUP LOGIC
         -- We check the distance between the clicked spot (targetX, targetZ) and the cannonball
+        -- Apply Z offset to correct hitbox alignment
         local dist = 100
         if cannonball and cannonball.exists then
-            dist = math.sqrt((targetX - cannonball.x)^2 + (targetZ - cannonball.z)^2)
+            local hitboxOffsetZ = 4 -- offset to lower the hitbox
+            dist = math.sqrt((targetX - cannonball.x)^2 + (targetZ - (cannonball.z + hitboxOffsetZ))^2)
+            print("Distance to cannonball:", dist, "Threshold: 0.5")
         end
         
-        -- If clicked close enough (distance < 1.0), pick it up
-            if dist < .5 then
-                cannonball.exists = false
-                print("Cannonball collected!")
+        -- If clicking on cannonball, walk to it
+            if dist < 0.5 then
+                -- Walk to the actual cannonball position
+                player:walkTo(cannonball.x, cannonball.z)
             else
+                -- Check if clicking near cannon to load it
+                if inventory.cannonball and not cannonLoaded and cannon then
+                    local cannonDist = math.sqrt((targetX - cannon.x)^2 + (targetZ - cannon.z)^2)
+                    if cannonDist < 2.0 then
+                        cannonLoaded = true
+                        inventory.cannonball = false
+                        print("Cannonball loaded into cannon!")
+                        -- Don't move player when loading cannon
+                        return
+                    end
+                end
+                
                 -- Otherwise, move the player
                 -- Prevent walking past the wall/door barrier
                 if door then
@@ -251,8 +301,8 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
       print("Clicked World Pos:", targetX, targetZ)
     end
 
-    -- Right click: aim & fire cannon at clicked position
-    if button == 2 and cannon then
+    -- Right click: aim & fire cannon at clicked position (only if loaded)
+    if button == 2 and cannon and cannonLoaded then
         local width, height = love.graphics.getDimensions()
         local nx = (mouseX / width) * 2 - 1
         local nz = (mouseY / height) * 2 - 1
@@ -265,7 +315,39 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
         if targetZ > worldBounds.maxZ then targetZ = worldBounds.maxZ end
         cannon:aimAt(targetX, targetZ)
         cannon:shoot(targetX, targetZ)
+        cannonLoaded = false
         print("Cannon fired at:", targetX, targetZ)
+    elseif button == 2 and not cannonLoaded then
+        print("Cannon is not loaded!")
+    end
+end
+
+function room1_scene:mousemoved(mouseX, mouseY)
+    -- Convert mouse position to world coordinates
+    local width, height = love.graphics.getDimensions()
+    local nx = (mouseX / width) * 2 - 1
+    local nz = (mouseY / height) * 2 - 1
+    mouseWorldX = nx * 18
+    mouseWorldZ = nz * 18
+    
+    -- Check if hovering over interactive objects
+    isHoveringInteractive = false
+    
+    -- Check cannonball
+    if cannonball and cannonball.exists then
+        local hitboxOffsetZ = 3.5 -- offset to lower the hitbox
+        local dist = math.sqrt((mouseWorldX - cannonball.x)^2 + (mouseWorldZ - (cannonball.z + hitboxOffsetZ))^2)
+        if dist < 0.5 then
+            isHoveringInteractive = true
+        end
+    end
+    
+    -- Check cannon (if cannonball is in inventory and not loaded)
+    if inventory.cannonball and not cannonLoaded and cannon then
+        local cannonDist = math.sqrt((mouseWorldX - cannon.x)^2 + (mouseWorldZ - cannon.z)^2)
+        if cannonDist < 2.0 then
+            isHoveringInteractive = true
+        end
     end
 end
 
