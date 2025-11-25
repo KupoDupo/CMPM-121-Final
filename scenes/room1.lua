@@ -10,6 +10,7 @@ local floor_tile
 local cannon
 local door
 local door_object
+local worldBounds = { minX = -12, maxX = 12, minZ = -12, maxZ = 12 }
 
 function room1_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
@@ -22,8 +23,8 @@ function room1_scene:load()
     -- Spawn a cannon (we place it to the left)
     cannon = Cannon.new(-6, 0)
 
-    -- Locked door: place at the back of the map (center X, far negative Z)
-    door = { x = 0, z = -24, locked = true }
+    -- Locked door: place at the back of the (smaller) map (moved closer into frame)
+    door = { x = 0, z = -6, locked = true }
 
     -- create a dedicated object for the door so it doesn't reuse the floor tile transforms
     door_object = dream:loadObject("assets/cube")
@@ -38,10 +39,11 @@ function room1_scene:update(dt)
     if player then
         player:update(dt)
         
-        -- Camera follows player
+        -- Camera follows player (lower height to zoom in)
+        -- Fixed overhead camera (do not follow player)
         dream.camera:resetTransform()
-        dream.camera:translate(0, 10, 0) 
-        dream.camera:rotateX(-math.pi / 2) 
+        dream.camera:translate(0, 8, 0)
+        dream.camera:rotateX(-math.pi / 2)
     end
     
     dream:update(dt)
@@ -58,17 +60,17 @@ function room1_scene:draw()
         -- Draw Cannonball
         if cannonball then cannonball:draw() end
         
-        -- Floor Grid
-        if floor_tile then
-          for x = -10, 10 do
-              for z = -10, 10 do
-                  floor_tile:resetTransform()
-                  floor_tile:translate(x * 3, -1, z * 3)
-                  floor_tile:scale(2, 0.1, 2)
-                  dream:draw(floor_tile)
-              end
-          end
-        end
+                -- Floor Grid (smaller area to match camera)
+                if floor_tile then
+                    for x = -6, 6 do
+                            for z = -6, 6 do
+                                    floor_tile:resetTransform()
+                                    floor_tile:translate(x * 3, -1, z * 3)
+                                    floor_tile:scale(2, 0.1, 2)
+                                    dream:draw(floor_tile)
+                            end
+                    end
+                end
     end
         -- Draw cannon
         if cannon then cannon:draw() end
@@ -138,6 +140,12 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
         local targetX = nx * 18
         local targetZ = nz * 18
 
+        -- Clamp target so player doesn't walk out of the camera bounds
+        if targetX < worldBounds.minX then targetX = worldBounds.minX end
+        if targetX > worldBounds.maxX then targetX = worldBounds.maxX end
+        if targetZ < worldBounds.minZ then targetZ = worldBounds.minZ end
+        if targetZ > worldBounds.maxZ then targetZ = worldBounds.maxZ end
+
         -- 2. CANNONBALL PICKUP LOGIC
         -- We check the distance between the clicked spot (targetX, targetZ) and the cannonball
         local dist = 100
@@ -146,13 +154,38 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
         end
         
         -- If clicked close enough (distance < 1.0), pick it up
-        if dist < .5 then
-            cannonball.exists = false
-            print("Cannonball collected!")
-        else
-            -- Otherwise, move the player
-            player:walkTo(targetX, targetZ)
-        end
+            if dist < .5 then
+                cannonball.exists = false
+                print("Cannonball collected!")
+            else
+                -- Otherwise, move the player
+                -- Prevent walking past a locked door: if the door is locked and the
+                -- clicked target would cross the door plane within the door's X range,
+                -- clamp the target to stay on the player's current side of the door.
+                if door and door.locked then
+                    local doorHalfWidth = 1.0
+                    local doorLeftX = door.x - doorHalfWidth
+                    local doorRightX = door.x + doorHalfWidth
+                    local buffer = 0.6 -- how far in front of the door to stop
+
+                    -- Only consider clamping when the click is aimed at the door opening horizontally
+                    if targetX >= doorLeftX and targetX <= doorRightX then
+                        local px, pz = player:getX(), player:getZ()
+                        -- If player is on the near/positive Z side and target is beyond door (smaller Z)
+                        if pz > door.z and targetZ < door.z then
+                            targetZ = door.z + buffer
+                            print("Door is locked — cannot move past it.")
+                        end
+                        -- If player is on the far/negative Z side and target is on the near side
+                        if pz < door.z and targetZ > door.z then
+                            targetZ = door.z - buffer
+                            print("Door is locked — cannot move past it.")
+                        end
+                    end
+                end
+
+                player:walkTo(targetX, targetZ)
+            end
         
             if cannonball then
                 print("CANNONBALL POS:", cannonball.x, cannonball.z, "EXISTS:", cannonball.exists)
@@ -169,6 +202,11 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
         local nz = (mouseY / height) * 2 - 1
         local targetX = nx * 18
         local targetZ = nz * 18
+        -- clamp cannon target to world bounds so shots stay in-frame
+        if targetX < worldBounds.minX then targetX = worldBounds.minX end
+        if targetX > worldBounds.maxX then targetX = worldBounds.maxX end
+        if targetZ < worldBounds.minZ then targetZ = worldBounds.minZ end
+        if targetZ > worldBounds.maxZ then targetZ = worldBounds.maxZ end
         cannon:aimAt(targetX, targetZ)
         cannon:shoot(targetX, targetZ)
         print("Cannon fired at:", targetX, targetZ)

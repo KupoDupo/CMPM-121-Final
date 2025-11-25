@@ -9,6 +9,8 @@ function character.new(name, startX, startY, startZ)
     local targetX, targetZ = x, z
     local speed = 6
     local isMoving = false
+    local stopThreshold = 0.08 -- when closer than this, snap to target
+    local decelDistance = 0.8  -- start slowing down within this distance
 
   -- This looks for "player.dae" in your project folder.
     local object = dream:loadObject("assets/human_model")
@@ -52,12 +54,31 @@ function character.new(name, startX, startY, startZ)
         local dx = targetX - x
         local dz = targetZ - z
         local dist = math.sqrt(dx*dx + dz*dz)
-        if dist < 0.1 then
+        if dist <= stopThreshold or dist == 0 then
+            -- close enough: snap exactly to target
+            x, z = targetX, targetZ
+            isMoving = false
+            return
+        end
+
+        -- slow down when approaching the target for more accurate stops
+        local moveSpeed = speed
+        if dist < decelDistance then
+            local t = dist / decelDistance
+            -- ease-out like reduction (quadratic)
+            moveSpeed = speed * (t * t)
+            -- ensure a minimum movement so we don't stall
+            moveSpeed = math.max(moveSpeed, 1.2)
+        end
+
+        -- move by computed step but don't overshoot
+        local step = moveSpeed * dt
+        if step >= dist then
             x, z = targetX, targetZ
             isMoving = false
         else
-            x = x + (dx / dist) * speed * dt
-            z = z + (dz / dist) * speed * dt
+            x = x + (dx / dist) * step
+            z = z + (dz / dist) * step
         end
     end
 
