@@ -78,10 +78,12 @@ function cannon.new(x, z)
         local spawnX = x - math.sin(self.yaw) * barrelLength
         local spawnZ = z - math.cos(self.yaw) * barrelLength
         
-        table.insert(projectiles, {x = spawnX, z = spawnZ, vx = vx, vz = vz, alive = true})
+        table.insert(projectiles, {x = spawnX, z = spawnZ, vx = vx, vz = vz, alive = true, bounces = 0})
     end
 
     function self:update(dt, door, walls, worldBounds)
+        local stoppedProjectiles = {}
+        
         -- update projectiles
         for i = #projectiles, 1, -1 do
             local p = projectiles[i]
@@ -91,21 +93,37 @@ function cannon.new(x, z)
                 p.x = p.x + p.vx * dt
                 p.z = p.z + p.vz * dt
 
+                -- Apply friction to slow down projectiles
+                p.vx = p.vx * 0.995
+                p.vz = p.vz * 0.995
+                
+                -- Check if projectile has stopped moving
+                local speed = math.sqrt(p.vx * p.vx + p.vz * p.vz)
+                if speed < 0.1 and p.bounces > 0 then
+                    -- Projectile has stopped, convert to pickup
+                    table.insert(stoppedProjectiles, {x = p.x, z = p.z})
+                    p.alive = false
+                end
+
                 -- Bounce off world boundaries
                 if worldBounds then
                     if p.x < worldBounds.minX then
                         p.x = worldBounds.minX
                         p.vx = -p.vx * 0.8 -- reverse and dampen
+                        p.bounces = p.bounces + 1
                     elseif p.x > worldBounds.maxX then
                         p.x = worldBounds.maxX
                         p.vx = -p.vx * 0.8
+                        p.bounces = p.bounces + 1
                     end
                     if p.z < worldBounds.minZ then
                         p.z = worldBounds.minZ
                         p.vz = -p.vz * 0.8
+                        p.bounces = p.bounces + 1
                     elseif p.z > worldBounds.maxZ then
                         p.z = worldBounds.maxZ
                         p.vz = -p.vz * 0.8
+                        p.bounces = p.bounces + 1
                     end
                 end
 
@@ -118,6 +136,7 @@ function cannon.new(x, z)
                         if p.x < walls.doorLeftX or p.x > walls.doorRightX then
                             p.z = walls.doorZ + (p.z > walls.doorZ and 0.2 or -0.2)
                             p.vz = -p.vz * 0.8
+                            p.bounces = p.bounces + 1
                             hitWall = true
                             print("Cannonball bounced off wall!")
                         end
@@ -144,6 +163,8 @@ function cannon.new(x, z)
                 end
             end
         end
+        
+        return stoppedProjectiles
     end
 
     function self:draw()
@@ -158,7 +179,7 @@ function cannon.new(x, z)
         for _, p in ipairs(projectiles) do
             projMesh:resetTransform()
             projMesh:translate(p.x, 1.0, p.z)
-            projMesh:scale(0.4)
+            projMesh:scale(0.8)
             dream:draw(projMesh)
         end
     end

@@ -16,6 +16,7 @@ local worldBounds = { minX = -12, maxX = 12, minZ = -12, maxZ = 12 }
 local inventory = {}
 local cannonLoaded = false
 local aimingMode = false
+local missedShot = false
 local mouseWorldX, mouseWorldZ = 0, 0
 local isHoveringInteractive = false
 
@@ -67,6 +68,7 @@ function room1_scene:update(dt)
             if distToCannonball < 1.0 then
                 cannonball.exists = false
                 inventory.cannonball = true
+                missedShot = false
                 print("Cannonball collected and added to inventory!")
             end
         end
@@ -105,7 +107,19 @@ function room1_scene:update(dt)
             doorLeftX = door.x - 1.0,
             doorRightX = door.x + 1.0
         }
-        cannon:update(dt, door, walls, worldBounds) 
+        local stoppedProjectiles = cannon:update(dt, door, walls, worldBounds)
+        
+        -- Create new cannonball pickups from stopped projectiles
+        if stoppedProjectiles and #stoppedProjectiles > 0 then
+            for _, pos in ipairs(stoppedProjectiles) do
+                -- Only create new cannonball if current one doesn't exist and we don't have one in inventory
+                if not cannonball.exists and not inventory.cannonball then
+                    cannonball = Cannonball.new(pos.x, pos.z)
+                    missedShot = true
+                    print("Cannonball can be picked up again!")
+                end
+            end
+        end
     end
 end
 
@@ -276,17 +290,25 @@ function room1_scene:draw()
     end
     
     -- Objective display
-    if not inventory.cannonball then
+    if door and (door.exploding or door.fallen) then
+        love.graphics.print("Objective: LEAVE THE ROOM!", 10, 60)
+        love.graphics.setColor(0, 1, 0)
+        love.graphics.print("Door destroyed! Head through the opening!", 10, 80)
+        love.graphics.setColor(1, 1, 1)
+    elseif missedShot then
+        love.graphics.print("Objective: TRY AGAIN - Pick up the cannonball", 10, 60)
+    elseif not inventory.cannonball then
         love.graphics.print("Objective: Find the Cannonball", 10, 60)
-    elseif not cannonLoaded and not aimingMode then
+    elseif inventory.cannonball and not cannonLoaded and not aimingMode then
         love.graphics.print("Objective: Load the Cannonball into the Cannon", 10, 60)
         love.graphics.print("(Walk near the cannon and click it)", 10, 80)
     elseif aimingMode then
-        love.graphics.print("Objective: Aim and click to shoot the door!", 10, 60)
-    elseif door and door.locked then
-        love.graphics.print("Objective: Shoot the door to unlock it", 10, 60)
+        love.graphics.print("Objective: BLAST THE DOOR!", 10, 60)
+        love.graphics.setColor(1, 0, 0)
+        love.graphics.print("BLAST THE DOOR!", 10, 80)
+        love.graphics.setColor(1, 1, 1)
     else
-        love.graphics.print("Door unlocked! You can now pass through.", 10, 60)
+        love.graphics.print("Objective: BLAST THE DOOR!", 10, 60)
     end
 end
 

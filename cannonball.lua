@@ -50,8 +50,8 @@ function cannonball.new(x, z)
 
         self.object:resetTransform()
         self.object:translate(self.x, 1.0, self.z)
-        -- Increased scale to make cannonball bigger
-        --self.object:scale(0.4)
+        -- Match scale with projectile cannonball
+        self.object:scale(0.8)
         dream:draw(self.object)
     end
 
