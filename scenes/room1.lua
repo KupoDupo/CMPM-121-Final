@@ -17,6 +17,8 @@ local inventory = {}
 local cannonLoaded = false
 local aimingMode = false
 local missedShot = false
+local missCount = 0
+local gameOver = false
 local mouseWorldX, mouseWorldZ = 0, 0
 local isHoveringInteractive = false
 
@@ -114,9 +116,17 @@ function room1_scene:update(dt)
             for _, pos in ipairs(stoppedProjectiles) do
                 -- Only create new cannonball if current one doesn't exist and we don't have one in inventory
                 if not cannonball.exists and not inventory.cannonball then
-                    cannonball = Cannonball.new(pos.x, pos.z)
-                    missedShot = true
-                    print("Cannonball can be picked up again!")
+                    missCount = missCount + 1
+                    print("Missed! Attempts remaining:", 3 - missCount)
+                    
+                    if missCount >= 3 then
+                        gameOver = true
+                        print("GAME OVER! Cannonball shattered after 3 misses!")
+                    else
+                        cannonball = Cannonball.new(pos.x, pos.z)
+                        missedShot = true
+                        print("Cannonball can be picked up again!")
+                    end
                 end
             end
         end
@@ -290,13 +300,40 @@ function room1_scene:draw()
     end
     
     -- Objective display
-    if door and (door.exploding or door.fallen) then
+    if gameOver then
+        love.graphics.setColor(1, 0, 0)
+        love.graphics.print("PUZZLE FAILED!", 10, 60)
+        love.graphics.print("The cannonball shattered after 3 misses.", 10, 80)
+        love.graphics.setColor(1, 1, 1)
+        
+        -- Draw restart button
+        local buttonX, buttonY = 10, 120
+        local buttonWidth, buttonHeight = 130, 30
+        local mx, my = love.mouse.getPosition()
+        local isHovering = mx >= buttonX and mx <= buttonX + buttonWidth and my >= buttonY and my <= buttonY + buttonHeight
+        
+        if isHovering then
+            love.graphics.setColor(0.3, 0.8, 0.3)
+        else
+            love.graphics.setColor(0.2, 0.6, 0.2)
+        end
+        love.graphics.rectangle("fill", buttonX, buttonY, buttonWidth, buttonHeight)
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.rectangle("line", buttonX, buttonY, buttonWidth, buttonHeight)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.print("RESTART PUZZLE", buttonX + 10, buttonY + 8)
+        
+        love.graphics.setColor(1, 1, 1)
+    elseif door and (door.exploding or door.fallen) then
         love.graphics.print("Objective: LEAVE THE ROOM!", 10, 60)
         love.graphics.setColor(0, 1, 0)
         love.graphics.print("Door destroyed! Head through the opening!", 10, 80)
         love.graphics.setColor(1, 1, 1)
     elseif missedShot then
+        love.graphics.setColor(1, 0.5, 0)
         love.graphics.print("Objective: TRY AGAIN - Pick up the cannonball", 10, 60)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.print("Attempts remaining: " .. (3 - missCount), 10, 80)
     elseif not inventory.cannonball then
         love.graphics.print("Objective: Find the Cannonball", 10, 60)
     elseif inventory.cannonball and not cannonLoaded and not aimingMode then
@@ -307,6 +344,11 @@ function room1_scene:draw()
         love.graphics.setColor(1, 0, 0)
         love.graphics.print("BLAST THE DOOR!", 10, 80)
         love.graphics.setColor(1, 1, 1)
+        if missCount > 0 then
+            love.graphics.setColor(1, 0.5, 0)
+            love.graphics.print("Attempts remaining: " .. (3 - missCount), 10, 100)
+            love.graphics.setColor(1, 1, 1)
+        end
     else
         love.graphics.print("Objective: BLAST THE DOOR!", 10, 60)
     end
@@ -315,6 +357,28 @@ end
 -- [[ UPDATED MOUSE LOGIC ]]
 function room1_scene:mousepressed(mouseX, mouseY, button)
     if button == 1 and player then
+        -- Check for restart button click if game is over
+        if gameOver then
+            local buttonX, buttonY = 10, 120
+            local buttonWidth, buttonHeight = 120, 30
+            if mouseX >= buttonX and mouseX <= buttonX + buttonWidth and mouseY >= buttonY and mouseY <= buttonY + buttonHeight then
+                -- Restart the puzzle
+                gameOver = false
+                missCount = 0
+                missedShot = false
+                inventory = {}
+                cannonLoaded = false
+                aimingMode = false
+                door.locked = true
+                door.exploding = false
+                door.fallen = false
+                door.explosionTime = 0
+                cannonball = Cannonball.new(1, 3)
+                print("Puzzle restarted!")
+            end
+            return
+        end
+        
         -- If in aiming mode, shoot the cannon
         if aimingMode and cannon then
             local width, height = love.graphics.getDimensions()
