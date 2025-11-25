@@ -43,16 +43,23 @@ function cannon.new(x, z)
 
     paintRecursive(self.object, mat)
 
-    -- Small mesh used for projectiles
-    local p_vertices = {{-0.08,0,0},{0.08,0,0},{0,0.16,0},{-0.08,0,-0.08},{0.08,0,-0.08},{0,0.16,-0.08}}
-    local projMesh = dream:newObject(dream:newMesh("proj_fallback", p_vertices, nil, "simple"))
+    -- Load cannonball model for projectiles
+    local projStatus, projMesh = pcall(dream.loadObject, dream, "assets/cannon-ball")
+    if not projStatus or not projMesh then
+        -- Fallback mesh if cannonball model doesn't load
+        local p_vertices = {{-0.08,0,0},{0.08,0,0},{0,0.16,0},{-0.08,0,-0.08},{0.08,0,-0.08},{0,0.16,-0.08}}
+        projMesh = dream:newObject(dream:newMesh("proj_fallback", p_vertices, nil, "simple"))
+    else
+        -- Apply same material/texture to projectile
+        paintRecursive(projMesh, mat)
+    end
 
     local projectiles = {}
 
     function self:aimAt(tx, tz)
         local dx = tx - x
         local dz = tz - z
-        self.yaw = math.atan2(dx, dz)
+        self.yaw = -math.atan2(dx, dz)
     end
 
     function self:shoot(tx, tz)
@@ -63,10 +70,18 @@ function cannon.new(x, z)
         local speed = 18
         local vx = (dx / dist) * speed
         local vz = (dz / dist) * speed
-        table.insert(projectiles, {x = x, z = z, vx = vx, vz = vz, alive = true})
+        
+        -- Spawn projectile at the barrel end (front of cannon)
+        -- Since the front is the bottom end when model is at 0 rotation,
+        -- and rotateY rotates around Y axis, calculate offset based on yaw
+        local barrelLength = 0.8 -- distance from center to barrel tip
+        local spawnX = x - math.sin(self.yaw) * barrelLength
+        local spawnZ = z - math.cos(self.yaw) * barrelLength
+        
+        table.insert(projectiles, {x = spawnX, z = spawnZ, vx = vx, vz = vz, alive = true})
     end
 
-    function self:update(dt, door)
+    function self:update(dt, door, walls, worldBounds)
         -- update projectiles
         for i = #projectiles, 1, -1 do
             local p = projectiles[i]
@@ -75,6 +90,39 @@ function cannon.new(x, z)
             else
                 p.x = p.x + p.vx * dt
                 p.z = p.z + p.vz * dt
+
+                -- Bounce off world boundaries
+                if worldBounds then
+                    if p.x < worldBounds.minX then
+                        p.x = worldBounds.minX
+                        p.vx = -p.vx * 0.8 -- reverse and dampen
+                    elseif p.x > worldBounds.maxX then
+                        p.x = worldBounds.maxX
+                        p.vx = -p.vx * 0.8
+                    end
+                    if p.z < worldBounds.minZ then
+                        p.z = worldBounds.minZ
+                        p.vz = -p.vz * 0.8
+                    elseif p.z > worldBounds.maxZ then
+                        p.z = worldBounds.maxZ
+                        p.vz = -p.vz * 0.8
+                    end
+                end
+
+                -- Bounce off walls (if not hitting door opening)
+                if walls then
+                    local hitWall = false
+                    -- Check if near the wall plane
+                    if math.abs(p.z - walls.doorZ) < 0.2 then
+                        -- Check if hitting wall sections (not door opening)
+                        if p.x < walls.doorLeftX or p.x > walls.doorRightX then
+                            p.z = walls.doorZ + (p.z > walls.doorZ and 0.2 or -0.2)
+                            p.vz = -p.vz * 0.8
+                            hitWall = true
+                            print("Cannonball bounced off wall!")
+                        end
+                    end
+                end
 
                 -- simple lifetime cut-off
                 if math.abs(p.x - x) > 100 or math.abs(p.z - z) > 100 then
@@ -86,10 +134,12 @@ function cannon.new(x, z)
                     local ddx = p.x - (door.x or 0)
                     local ddz = p.z - (door.z or 0)
                     local d = math.sqrt(ddx*ddx + ddz*ddz)
-                    if d < 1.0 then
+                    if d < 1.5 then
                         door.locked = false
+                        door.exploding = true
+                        door.explosionTime = 0
                         p.alive = false
-                        print("Door unlocked!")
+                        print("BOOM! Door destroyed!")
                     end
                 end
             end
@@ -107,8 +157,8 @@ function cannon.new(x, z)
         -- draw projectiles
         for _, p in ipairs(projectiles) do
             projMesh:resetTransform()
-            projMesh:translate(p.x, 0.4, p.z)
-            projMesh:scale(0.2)
+            projMesh:translate(p.x, 1.0, p.z)
+            projMesh:scale(0.4)
             dream:draw(projMesh)
         end
     end

@@ -15,6 +15,7 @@ local wall_right
 local worldBounds = { minX = -12, maxX = 12, minZ = -12, maxZ = 12 }
 local inventory = {}
 local cannonLoaded = false
+local aimingMode = false
 local mouseWorldX, mouseWorldZ = 0, 0
 local isHoveringInteractive = false
 
@@ -49,6 +50,16 @@ function room1_scene:update(dt)
     if player then
         player:update(dt)
         
+        -- Update door explosion/falling animation
+        if door and door.exploding then
+            door.explosionTime = door.explosionTime + dt
+            -- Door falls down over 1 second
+            if door.explosionTime > 1.0 then
+                door.exploding = false
+                door.fallen = true
+            end
+        end
+        
         -- Auto-pickup cannonball when player gets close
         if cannonball and cannonball.exists then
             local px, pz = player:getX(), player:getZ()
@@ -60,6 +71,23 @@ function room1_scene:update(dt)
             end
         end
         
+        -- Auto-load cannon when player gets close with cannonball
+        if cannon and inventory.cannonball and not cannonLoaded then
+            local px, pz = player:getX(), player:getZ()
+            local distToCannon = math.sqrt((px - cannon.x)^2 + (pz - cannon.z)^2)
+            if distToCannon < 1.5 then
+                cannonLoaded = true
+                inventory.cannonball = false
+                aimingMode = true
+                print("Cannonball loaded! Click to aim and shoot the door.")
+            end
+        end
+        
+        -- Update cannon aim to follow mouse during aiming mode
+        if aimingMode and cannon then
+            cannon:aimAt(mouseWorldX, mouseWorldZ)
+        end
+        
         -- Camera follows player (lower height to zoom in)
         -- Fixed overhead camera (do not follow player)
         dream.camera:resetTransform()
@@ -68,7 +96,17 @@ function room1_scene:update(dt)
     end
     
     dream:update(dt)
-    if cannon then cannon:update(dt, door) end
+    if cannon then 
+        -- Pass wall boundaries for collision
+        local walls = {
+            leftX = -15, 
+            rightX = 15, 
+            doorZ = door.z,
+            doorLeftX = door.x - 1.0,
+            doorRightX = door.x + 1.0
+        }
+        cannon:update(dt, door, walls, worldBounds) 
+    end
 end
 
 function room1_scene:draw()
@@ -143,6 +181,13 @@ function room1_scene:draw()
             if door.locked then
                 -- darker brown wood color when locked
                 mat.color = {0.35, 0.20, 0.05, 1}
+            elseif door.exploding then
+                -- Flash orange/red during explosion
+                local flash = math.sin(door.explosionTime * 20) * 0.5 + 0.5
+                mat.color = {1.0, 0.3 + flash * 0.4, 0.0, 1}
+            elseif door.fallen then
+                -- Darker brown when fallen
+                mat.color = {0.25, 0.15, 0.05, 1}
             else
                 mat.color = {0.2, 1, 0.2, 1}
             end
@@ -166,17 +211,53 @@ function room1_scene:draw()
             paintRecursive(door_object, mat)
 
             door_object:resetTransform()
-            door_object:translate(door.x, 1.5, door.z)
-            if door.locked then
+            
+            if door.exploding then
+                -- Door falling/rotating animation
+                local fallProgress = door.explosionTime
+                door_object:translate(door.x, 1.5 - fallProgress * 2, door.z)
+                door_object:rotateX(fallProgress * math.pi / 2) -- rotate forward
+                door_object:scale(1.5, 3.0, 0.2)
+            elseif door.fallen then
+                -- Door flat on ground
+                door_object:translate(door.x, 0.1, door.z - 1.5)
+                door_object:rotateX(math.pi / 2)
+                door_object:scale(1.5, 3.0, 0.2)
+            elseif door.locked then
+                door_object:translate(door.x, 1.5, door.z)
                 door_object:scale(1.5, 3.0, 0.2)
             else
                 -- unlocked: smaller/flat to indicate open
+                door_object:translate(door.x, 1.5, door.z)
                 door_object:scale(0.2, 0.2, 0.2)
             end
             dream:draw(door_object)
         end
     
     dream:present()
+    
+    -- Draw aiming trajectory line when in aiming mode
+    if aimingMode and cannon then
+        love.graphics.setColor(1, 0, 0, 0.8) -- Red trajectory line
+        love.graphics.setLineWidth(3)
+        
+        -- Convert cannon world position to screen
+        local width, height = love.graphics.getDimensions()
+        local cannonScreenX = (cannon.x / 18 + 1) * width / 2
+        local cannonScreenZ = (cannon.z / 18 + 1) * height / 2
+        
+        -- Draw line from cannon to mouse
+        local mx, my = love.mouse.getPosition()
+        love.graphics.line(cannonScreenX, cannonScreenZ, mx, my)
+        
+        -- Draw targeting circle at mouse
+        love.graphics.circle("line", mx, my, 15, 20)
+        love.graphics.setLineWidth(1)
+        love.graphics.setColor(1, 1, 1)
+        
+        -- Draw instruction text
+        love.graphics.print("AIMING MODE: Click to shoot!", width/2 - 100, 10)
+    end
     
     -- Draw custom cursor if hovering over interactive object
     if isHoveringInteractive then
@@ -197,11 +278,13 @@ function room1_scene:draw()
     -- Objective display
     if not inventory.cannonball then
         love.graphics.print("Objective: Find the Cannonball", 10, 60)
-    elseif not cannonLoaded then
+    elseif not cannonLoaded and not aimingMode then
         love.graphics.print("Objective: Load the Cannonball into the Cannon", 10, 60)
         love.graphics.print("(Walk near the cannon and click it)", 10, 80)
+    elseif aimingMode then
+        love.graphics.print("Objective: Aim and click to shoot the door!", 10, 60)
     elseif door and door.locked then
-        love.graphics.print("Objective: Right-click to aim and shoot the door", 10, 60)
+        love.graphics.print("Objective: Shoot the door to unlock it", 10, 60)
     else
         love.graphics.print("Door unlocked! You can now pass through.", 10, 60)
     end
@@ -210,6 +293,28 @@ end
 -- [[ UPDATED MOUSE LOGIC ]]
 function room1_scene:mousepressed(mouseX, mouseY, button)
     if button == 1 and player then
+        -- If in aiming mode, shoot the cannon
+        if aimingMode and cannon then
+            local width, height = love.graphics.getDimensions()
+            local nx = (mouseX / width) * 2 - 1
+            local nz = (mouseY / height) * 2 - 1
+            local targetX = nx * 18
+            local targetZ = nz * 18
+            
+            -- Clamp target to world bounds
+            if targetX < worldBounds.minX then targetX = worldBounds.minX end
+            if targetX > worldBounds.maxX then targetX = worldBounds.maxX end
+            if targetZ < worldBounds.minZ then targetZ = worldBounds.minZ end
+            if targetZ > worldBounds.maxZ then targetZ = worldBounds.maxZ end
+            
+            cannon:aimAt(targetX, targetZ)
+            cannon:shoot(targetX, targetZ)
+            aimingMode = false
+            cannonLoaded = false
+            print("Cannon fired at:", targetX, targetZ)
+            return
+        end
+        
         local width, height = love.graphics.getDimensions()
         
         -- 1. YOUR CUSTOM MATH
@@ -242,14 +347,18 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
                 -- Walk to the actual cannonball position
                 player:walkTo(cannonball.x, cannonball.z)
             else
-                -- Check if clicking near cannon to load it
-                if inventory.cannonball and not cannonLoaded and cannon then
+                -- Check if clicking near cannon
+                if cannon then
                     local cannonDist = math.sqrt((targetX - cannon.x)^2 + (targetZ - cannon.z)^2)
                     if cannonDist < 2.0 then
-                        cannonLoaded = true
-                        inventory.cannonball = false
-                        print("Cannonball loaded into cannon!")
-                        -- Don't move player when loading cannon
+                        if inventory.cannonball and not cannonLoaded then
+                            -- Walk to cannon to load it
+                            player:walkTo(cannon.x, cannon.z)
+                            print("Walking to cannon to load it...")
+                        elseif not inventory.cannonball and not cannonLoaded then
+                            -- Examine cannon without cannonball
+                            print("This is an old cannon. Maybe we can load it with something...")
+                        end
                         return
                     end
                 end
@@ -299,26 +408,6 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
                 print("NO CANNONBALL VARIABLE!")
             end
       print("Clicked World Pos:", targetX, targetZ)
-    end
-
-    -- Right click: aim & fire cannon at clicked position (only if loaded)
-    if button == 2 and cannon and cannonLoaded then
-        local width, height = love.graphics.getDimensions()
-        local nx = (mouseX / width) * 2 - 1
-        local nz = (mouseY / height) * 2 - 1
-        local targetX = nx * 18
-        local targetZ = nz * 18
-        -- clamp cannon target to world bounds so shots stay in-frame
-        if targetX < worldBounds.minX then targetX = worldBounds.minX end
-        if targetX > worldBounds.maxX then targetX = worldBounds.maxX end
-        if targetZ < worldBounds.minZ then targetZ = worldBounds.minZ end
-        if targetZ > worldBounds.maxZ then targetZ = worldBounds.maxZ end
-        cannon:aimAt(targetX, targetZ)
-        cannon:shoot(targetX, targetZ)
-        cannonLoaded = false
-        print("Cannon fired at:", targetX, targetZ)
-    elseif button == 2 and not cannonLoaded then
-        print("Cannon is not loaded!")
     end
 end
 
