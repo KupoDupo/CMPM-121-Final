@@ -92,6 +92,20 @@ function room1_scene:update(dt)
             cannon:aimAt(mouseWorldX, mouseWorldZ)
         end
         
+        -- Check if player walks through the door opening when door is destroyed
+        if door and door.fallen then
+            local px, pz = player:getX(), player:getZ()
+            local doorLeftX = door.x - 1.0
+            local doorRightX = door.x + 1.0
+            -- If player crosses through the door opening
+            if px >= doorLeftX and px <= doorRightX and pz < door.z - 1.0 then
+                -- Transition to room 2
+                print("Transitioning to Room 2!")
+                scenery.setScene("room2")
+                return
+            end
+        end
+        
         -- Camera follows player (lower height to zoom in)
         -- Fixed overhead camera (do not follow player)
         dream.camera:resetTransform()
