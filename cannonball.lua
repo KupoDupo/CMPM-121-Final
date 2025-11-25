@@ -1,6 +1,6 @@
-local eyeball = {}
+local cannonball = {}
 
-function eyeball.new(x, z)
+function cannonball.new(x, z)
     local self = {}
     self.x = x
     self.z = z
@@ -11,7 +11,7 @@ function eyeball.new(x, z)
     local status, object = pcall(dream.loadObject, dream, "assets/cannon-ball")
 
     if not status or not object then
-        print("NOTICE: cannon-ball model not found. Using eyeball/cube fallback.")
+        print("NOTICE: cannon-ball model not found. Using fallback mesh.")
         local vertices = {{-0.2,0,0}, {0.2,0,0}, {0,0.5,0}, {-0.2,0,-0.2}, {0.2,0,-0.2}, {0,0.5,-0.2}}
         object = dream:newObject(dream:newMesh("cannonball_fallback", vertices, nil, "simple"))
     end
@@ -44,21 +44,22 @@ function eyeball.new(x, z)
 
     paintRecursive(self.object, mat)
 
-    -- 3. Draw Function
+    -- 3. Draw Function (larger scale than the old eyeball)
     function self:draw()
         if not self.exists then return end
 
         self.object:resetTransform()
         self.object:translate(self.x, 1.0, self.z)
-        self.object:scale(0.2)
+        -- Increased scale to make cannonball bigger
+        --self.object:scale(0.4)
         dream:draw(self.object)
     end
 
-    function self:getX() return x end
-    function self:getZ() return z end
-    function self:getObject() return object end
+    function self:getX() return self.x end
+    function self:getZ() return self.z end
+    function self:getObject() return self.object end
 
     return self
 end
 
-return eyeball
+return cannonball

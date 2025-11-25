@@ -109,7 +109,7 @@ git tag -d v1.0.0
 ```
 
 ### What About Steps 4 and 6?
-Our intention for our first physics puzzle was that you would pick up an item (an eyeball, which currently looks like a white sphere) and then drop it on a button / pressure plate which would open a door to the next room.  Currently though the eyeball refuses to stay in place and follows the player sphere as it moves.  We eventually decided that we would need to work on this bug past the due date, which is why steps 4 and 6 are currently incomplete.
+Our intention for our first physics puzzle was that you would pick up an item (a cannonball, which currently looks like a white sphere) and then drop it on a button / pressure plate which would open a door to the next room.  Currently though the cannonball refuses to stay in place and follows the player sphere as it moves.  We eventually decided that we would need to work on this bug past the due date, which is why steps 4 and 6 are currently incomplete.
 
 ## Reflection
 Completing F1 has made us realize that Lua/LÖVE would be a little more difficult to grasp than I originally thought.  The most difficult part was figuring out how to get the 3D objects to appear normally on the map, and even now it is still a bit janky for the prototype.  I think part of our issue was not starting earlier, which left us scrambling to figure things out.  I think we're on the right track now, we just need to give ourselves more time to work on future requirements.

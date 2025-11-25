@@ -1,19 +1,32 @@
 local Character = require("character")
-local Eyeball = require("eyeball")
+local Cannonball = require("cannonball")
+local Cannon = require("cannon")
 
 local room1_scene = {}
 local player
 local sun
 local item
 local floor_tile
+local cannon
+local door
+local door_object
 
 function room1_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
 
     player = Character.new("Hero", 0, 0, 0)
     
-    -- Spawn Eyeball at (3, 3)
-    eyeball = Eyeball.new(1, 3)
+    -- Spawn Cannonball at (3, 3)
+    cannonball = Cannonball.new(1, 3)
+    
+    -- Spawn a cannon (we place it to the left)
+    cannon = Cannon.new(-6, 0)
+
+    -- Locked door: place at the back of the map (center X, far negative Z)
+    door = { x = 0, z = -24, locked = true }
+
+    -- create a dedicated object for the door so it doesn't reuse the floor tile transforms
+    door_object = dream:loadObject("assets/cube")
     
     floor_tile = dream:loadObject("assets/cube")
 
@@ -32,7 +45,7 @@ function room1_scene:update(dt)
     end
     
     dream:update(dt)
-    
+    if cannon then cannon:update(dt, door) end
 end
 
 function room1_scene:draw()
@@ -42,8 +55,8 @@ function room1_scene:draw()
     if player then
         player:draw()
         
-        -- Draw Eyeball
-        if eyeball then eyeball:draw() end
+        -- Draw Cannonball
+        if cannonball then cannonball:draw() end
         
         -- Floor Grid
         if floor_tile then
@@ -57,15 +70,57 @@ function room1_scene:draw()
           end
         end
     end
+        -- Draw cannon
+        if cannon then cannon:draw() end
+
+        -- Draw door using a dedicated cube object and colored material
+        if door and door_object then
+            -- color material for door: red when locked, green when unlocked
+            local mat = dream:newMaterial()
+            if door.locked then
+                -- brown wood-like color when locked
+                mat.color = {0.45, 0.27, 0.07, 1}
+            else
+                mat.color = {0.2, 1, 0.2, 1}
+            end
+            mat.roughness = 0.6
+            mat.metallic = 0.0
+            mat.cullMode = "none"
+
+            local function paintRecursive(obj, material)
+                if obj.meshes then
+                    for _, mesh in pairs(obj.meshes) do
+                        mesh.material = material
+                    end
+                end
+                if obj.objects then
+                    for _, child in pairs(obj.objects) do
+                        paintRecursive(child, material)
+                    end
+                end
+            end
+
+            paintRecursive(door_object, mat)
+
+            door_object:resetTransform()
+            door_object:translate(door.x, 1.5, door.z)
+            if door.locked then
+                door_object:scale(1.5, 3.0, 0.2)
+            else
+                -- unlocked: smaller/flat to indicate open
+                door_object:scale(0.2, 0.2, 0.2)
+            end
+            dream:draw(door_object)
+        end
     
     dream:present()
     
     -- UI
     love.graphics.setColor(1, 1, 1)
-    if eyeball and not eyeball.exists then
-        love.graphics.print("EYEBALL COLLECTED!", 10, 10)
+    if cannonball and not cannonball.exists then
+        love.graphics.print("CANNONBALL COLLECTED!", 10, 10)
     else
-        love.graphics.print("Find the Eyeball...", 10, 10)
+        love.graphics.print("Find the Cannonball...", 10, 10)
     end
 end
 
@@ -83,28 +138,40 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
         local targetX = nx * 18
         local targetZ = nz * 18
 
-        -- 2. EYEBALL PICKUP LOGIC
-        -- We check the distance between the clicked spot (targetX, targetZ) and the eyeball
+        -- 2. CANNONBALL PICKUP LOGIC
+        -- We check the distance between the clicked spot (targetX, targetZ) and the cannonball
         local dist = 100
-        if eyeball and eyeball.exists then
-            dist = math.sqrt((targetX - eyeball.x)^2 + (targetZ - eyeball.z)^2)
+        if cannonball and cannonball.exists then
+            dist = math.sqrt((targetX - cannonball.x)^2 + (targetZ - cannonball.z)^2)
         end
         
         -- If clicked close enough (distance < 1.0), pick it up
         if dist < .5 then
-            eyeball.exists = false
-            print("Eyeball collected!")
+            cannonball.exists = false
+            print("Cannonball collected!")
         else
             -- Otherwise, move the player
             player:walkTo(targetX, targetZ)
         end
         
-      if eyeball then
-        print("EYEBALL POS:", eyeball.x, eyeball.z, "EXISTS:", eyeball.exists)
-      else
-        print("NO EYEBALL VARIABLE!")
-      end
+            if cannonball then
+                print("CANNONBALL POS:", cannonball.x, cannonball.z, "EXISTS:", cannonball.exists)
+            else
+                print("NO CANNONBALL VARIABLE!")
+            end
       print("Clicked World Pos:", targetX, targetZ)
+    end
+
+    -- Right click: aim & fire cannon at clicked position
+    if button == 2 and cannon then
+        local width, height = love.graphics.getDimensions()
+        local nx = (mouseX / width) * 2 - 1
+        local nz = (mouseY / height) * 2 - 1
+        local targetX = nx * 18
+        local targetZ = nz * 18
+        cannon:aimAt(targetX, targetZ)
+        cannon:shoot(targetX, targetZ)
+        print("Cannon fired at:", targetX, targetZ)
     end
 end
 
