@@ -10,6 +10,8 @@ local floor_tile
 local cannon
 local door
 local door_object
+local wall_left
+local wall_right
 local worldBounds = { minX = -12, maxX = 12, minZ = -12, maxZ = 12 }
 
 function room1_scene:load()
@@ -28,6 +30,10 @@ function room1_scene:load()
 
     -- create a dedicated object for the door so it doesn't reuse the floor tile transforms
     door_object = dream:loadObject("assets/cube")
+    
+    -- Create wall objects on both sides of the door
+    wall_left = dream:loadObject("assets/cube")
+    wall_right = dream:loadObject("assets/cube")
     
     floor_tile = dream:loadObject("assets/cube")
 
@@ -75,13 +81,53 @@ function room1_scene:draw()
         -- Draw cannon
         if cannon then cannon:draw() end
 
+        -- Draw walls on both sides of the door
+        if wall_left and wall_right and door then
+            local wall_mat = dream:newMaterial()
+            wall_mat.color = {0.55, 0.37, 0.17, 1} -- lighter brown than door
+            wall_mat.roughness = 0.6
+            wall_mat.metallic = 0.0
+            wall_mat.cullMode = "none"
+
+            local function paintRecursive(obj, material)
+                if obj.meshes then
+                    for _, mesh in pairs(obj.meshes) do
+                        mesh.material = material
+                    end
+                end
+                if obj.objects then
+                    for _, child in pairs(obj.objects) do
+                        paintRecursive(child, material)
+                    end
+                end
+            end
+
+            -- Left wall (extends from left edge to door)
+            paintRecursive(wall_left, wall_mat)
+            wall_left:resetTransform()
+            local leftWallX = -15 -- left side of visible room (extended further)
+            local leftWallWidth = math.abs(leftWallX - (door.x - 1.0))
+            wall_left:translate(leftWallX + leftWallWidth/2, 1.5, door.z)
+            wall_left:scale(leftWallWidth, 3.0, 0.2)
+            dream:draw(wall_left)
+
+            -- Right wall (extends from door to right edge)
+            paintRecursive(wall_right, wall_mat)
+            wall_right:resetTransform()
+            local rightWallX = 15
+            local rightWallWidth = math.abs(rightWallX - (door.x + 1.0))
+            wall_right:translate(door.x + 1.0 + rightWallWidth/2, 1.5, door.z)
+            wall_right:scale(rightWallWidth, 3.0, 0.2)
+            dream:draw(wall_right)
+        end
+
         -- Draw door using a dedicated cube object and colored material
         if door and door_object then
-            -- color material for door: red when locked, green when unlocked
+            -- color material for door: darker brown when locked, green when unlocked
             local mat = dream:newMaterial()
             if door.locked then
-                -- brown wood-like color when locked
-                mat.color = {0.45, 0.27, 0.07, 1}
+                -- darker brown wood color when locked
+                mat.color = {0.35, 0.20, 0.05, 1}
             else
                 mat.color = {0.2, 1, 0.2, 1}
             end
@@ -159,27 +205,37 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
                 print("Cannonball collected!")
             else
                 -- Otherwise, move the player
-                -- Prevent walking past a locked door: if the door is locked and the
-                -- clicked target would cross the door plane within the door's X range,
-                -- clamp the target to stay on the player's current side of the door.
-                if door and door.locked then
+                -- Prevent walking past the wall/door barrier
+                if door then
                     local doorHalfWidth = 1.0
                     local doorLeftX = door.x - doorHalfWidth
                     local doorRightX = door.x + doorHalfWidth
-                    local buffer = 0.6 -- how far in front of the door to stop
+                    local buffer = 0.6 -- how far in front of the wall/door to stop
 
-                    -- Only consider clamping when the click is aimed at the door opening horizontally
-                    if targetX >= doorLeftX and targetX <= doorRightX then
-                        local px, pz = player:getX(), player:getZ()
-                        -- If player is on the near/positive Z side and target is beyond door (smaller Z)
-                        if pz > door.z and targetZ < door.z then
+                    local px, pz = player:getX(), player:getZ()
+                    
+                    -- Block movement through the entire wall/door plane
+                    -- If player is on the near/positive Z side and target is beyond wall (smaller Z)
+                    if pz > door.z and targetZ < door.z then
+                        -- Allow passing only through the door opening when unlocked
+                        if door.locked or targetX < doorLeftX or targetX > doorRightX then
                             targetZ = door.z + buffer
-                            print("Door is locked — cannot move past it.")
+                            if door.locked and targetX >= doorLeftX and targetX <= doorRightX then
+                                print("Door is locked — cannot move past it.")
+                            else
+                                print("Cannot move through the wall.")
+                            end
                         end
-                        -- If player is on the far/negative Z side and target is on the near side
-                        if pz < door.z and targetZ > door.z then
+                    end
+                    -- If player is on the far/negative Z side and target is on the near side
+                    if pz < door.z and targetZ > door.z then
+                        if door.locked or targetX < doorLeftX or targetX > doorRightX then
                             targetZ = door.z - buffer
-                            print("Door is locked — cannot move past it.")
+                            if door.locked and targetX >= doorLeftX and targetX <= doorRightX then
+                                print("Door is locked — cannot move past it.")
+                            else
+                                print("Cannot move through the wall.")
+                            end
                         end
                     end
                 end
