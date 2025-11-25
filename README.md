@@ -113,3 +113,7 @@ Our intention for our first physics puzzle was that you would pick up an item (a
 
 ## Reflection
 Completing F1 has made us realize that Lua/LÖVE would be a little more difficult to grasp than I originally thought.  The most difficult part was figuring out how to get the 3D objects to appear normally on the map, and even now it is still a bit janky for the prototype.  I think part of our issue was not starting earlier, which left us scrambling to figure things out.  I think we're on the right track now, we just need to give ourselves more time to work on future requirements.
+
+# Devlog Entry - [11/25]
+
+There is now a functional puzzle for the first room.  We changed it from what we originally planned to make it more of a physics based puzzle.  You pick up a cannonball and load it into a cannon in the room.  Then you can aim the cannon and try to shoot the door so you can escape the room.  If you miss the door the cannonball will bounce off the walls and hit the floor.  You get three chances to hit the door, after which the cannonball will break from hitting the walls.  When this happens a restart button will appear for you to try the level over again.  There are game objectives in the corner to help direct the player on what to do.  If you do knock the door down you can walk through and be taken to the second room, which is currently under development.
