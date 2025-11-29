@@ -7,6 +7,7 @@ function character.new(name, startX, startY, startZ)
     local y = startY or 0
     local z = startZ or 0
     local targetX, targetZ = x, z
+    local rotation = 0 -- Track character rotation angle
     local speed = 6
     local isMoving = false
     local stopThreshold = 0.08 -- when closer than this, snap to target
@@ -61,6 +62,9 @@ function character.new(name, startX, startY, startZ)
             return
         end
 
+        -- Calculate rotation to face movement direction
+        rotation = -math.atan2(dx, dz)
+
         -- slow down when approaching the target for more accurate stops
         local moveSpeed = speed
         if dist < decelDistance then
@@ -85,6 +89,7 @@ function character.new(name, startX, startY, startZ)
     function self:draw()
         object:resetTransform()
         object:translate(x, y, z)
+        object:rotateY(rotation) -- Apply rotation to face movement direction
         
         -- Apply that 10x scale every frame
         object:scale(0.5) 
