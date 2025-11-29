@@ -1,6 +1,7 @@
 local Character = require("character")
 local Cannonball = require("cannonball")
 local Cannon = require("cannon")
+local Inventory = require("inventory")
 
 local room1_scene = {}
 local player
@@ -13,7 +14,7 @@ local door_object
 local wall_left
 local wall_right
 local worldBounds = { minX = -12, maxX = 12, minZ = -12, maxZ = 12 }
-local inventory = {}
+local inventory
 local cannonLoaded = false
 local aimingMode = false
 local missedShot = false
@@ -21,10 +22,13 @@ local missCount = 0
 local gameOver = false
 local mouseWorldX, mouseWorldZ = 0, 0
 local isHoveringInteractive = false
+local interactionMessage = ""
+local messageTimer = 0
 
 function room1_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
 
+    inventory = Inventory.new()
     player = Character.new("Hero", 0, 0, 0)
     
     -- Spawn Cannonball at (3, 3)
@@ -69,21 +73,30 @@ function room1_scene:update(dt)
             local distToCannonball = math.sqrt((px - cannonball.x)^2 + (pz - cannonball.z)^2)
             if distToCannonball < 1.0 then
                 cannonball.exists = false
-                inventory.cannonball = true
+                local success = inventory:addItem("cannonball", "Cannonball")
+                print("Cannonball added to inventory:", success)
+                print("Inventory has cannonball:", inventory:hasItem("cannonball"))
                 missedShot = false
-                print("Cannonball collected and added to inventory!")
+                interactionMessage = "Cannonball collected!"
+                messageTimer = 2
             end
         end
         
+        -- Message timer
+        if messageTimer > 0 then
+            messageTimer = messageTimer - dt
+        end
+        
         -- Auto-load cannon when player gets close with cannonball
-        if cannon and inventory.cannonball and not cannonLoaded then
+        if cannon and inventory:hasItem("cannonball") and not cannonLoaded then
             local px, pz = player:getX(), player:getZ()
             local distToCannon = math.sqrt((px - cannon.x)^2 + (pz - cannon.z)^2)
             if distToCannon < 1.5 then
                 cannonLoaded = true
-                inventory.cannonball = false
+                inventory:removeItem("cannonball")
                 aimingMode = true
-                print("Cannonball loaded! Click to aim and shoot the door.")
+                interactionMessage = "Cannon loaded! Click to aim and fire."
+                messageTimer = 2
             end
         end
         
@@ -129,7 +142,7 @@ function room1_scene:update(dt)
         if stoppedProjectiles and #stoppedProjectiles > 0 then
             for _, pos in ipairs(stoppedProjectiles) do
                 -- Only create new cannonball if current one doesn't exist and we don't have one in inventory
-                if not cannonball.exists and not inventory.cannonball then
+                if not cannonball.exists and not inventory:hasItem("cannonball") then
                     missCount = missCount + 1
                     print("Missed! Attempts remaining:", 3 - missCount)
                     
@@ -298,7 +311,7 @@ function room1_scene:draw()
     end
     
     -- Draw custom cursor if hovering over interactive object
-    if isHoveringInteractive then
+    if isHoveringInteractive and not inventory.isOpen then
         local mx, my = love.mouse.getPosition()
         love.graphics.setColor(1, 1, 0, 0.8) -- Yellow with transparency
         love.graphics.circle("line", mx, my, 12, 20)
@@ -306,12 +319,19 @@ function room1_scene:draw()
         love.graphics.setColor(1, 1, 1)
     end
     
-    -- UI
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print("Inventory:", 10, 10)
-    if inventory.cannonball then
-        love.graphics.print("- Cannonball", 10, 30)
+    -- Draw inventory
+    local mx, my = love.mouse.getPosition()
+    inventory:draw(mx, my)
+    
+    -- Draw interaction message
+    if messageTimer > 0 then
+        love.graphics.setColor(0.2, 0.8, 0.2, math.min(1, messageTimer))
+        love.graphics.rectangle("fill", love.graphics.getWidth() / 2 - 150, 60, 300, 40, 5, 5)
+        love.graphics.setColor(1, 1, 1, math.min(1, messageTimer))
+        love.graphics.printf(interactionMessage, love.graphics.getWidth() / 2 - 145, 72, 290, "center")
     end
+    
+    love.graphics.setColor(1, 1, 1)
     
     -- Objective display
     if gameOver then
@@ -348,11 +368,11 @@ function room1_scene:draw()
         love.graphics.print("Objective: TRY AGAIN - Pick up the cannonball", 10, 60)
         love.graphics.setColor(1, 1, 1)
         love.graphics.print("Attempts remaining: " .. (3 - missCount), 10, 80)
-    elseif not inventory.cannonball then
+    elseif not inventory:hasItem("cannonball") then
         love.graphics.print("Objective: Find the Cannonball", 10, 60)
-    elseif inventory.cannonball and not cannonLoaded and not aimingMode then
+    elseif inventory:hasItem("cannonball") and not cannonLoaded and not aimingMode then
         love.graphics.print("Objective: Load the Cannonball into the Cannon", 10, 60)
-        love.graphics.print("(Walk near the cannon and click it)", 10, 80)
+        love.graphics.print("(Walk near the cannon or drag from inventory)", 10, 80)
     elseif aimingMode then
         love.graphics.print("Objective: BLAST THE DOOR!", 10, 60)
         love.graphics.setColor(1, 0, 0)
@@ -370,7 +390,17 @@ end
 
 -- [[ UPDATED MOUSE LOGIC ]]
 function room1_scene:mousepressed(mouseX, mouseY, button)
+    -- Check inventory first
+    if inventory:mousepressed(mouseX, mouseY, button) then
+        return
+    end
+    
     if button == 1 and player then
+        -- Don't allow world interaction if inventory is open
+        if inventory.isOpen then
+            return
+        end
+        
         -- Check for restart button click if game is over
         if gameOver then
             local buttonX, buttonY = 10, 120
@@ -380,7 +410,7 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
                 gameOver = false
                 missCount = 0
                 missedShot = false
-                inventory = {}
+                inventory:clear()
                 cannonLoaded = false
                 aimingMode = false
                 door.locked = true
@@ -388,7 +418,8 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
                 door.fallen = false
                 door.explosionTime = 0
                 cannonball = Cannonball.new(1, 3)
-                print("Puzzle restarted!")
+                interactionMessage = "Puzzle restarted!"
+                messageTimer = 2
             end
             return
         end
@@ -532,12 +563,52 @@ function room1_scene:mousemoved(mouseX, mouseY)
     end
     
     -- Check cannon (if cannonball is in inventory and not loaded)
-    if inventory.cannonball and not cannonLoaded and cannon then
+    if inventory:hasItem("cannonball") and not cannonLoaded and cannon then
         local cannonDist = math.sqrt((mouseWorldX - cannon.x)^2 + (mouseWorldZ - cannon.z)^2)
         if cannonDist < 2.0 then
             isHoveringInteractive = true
         end
     end
+end
+
+function room1_scene:mousereleased(mouseX, mouseY, button)
+    -- Check if dragging item from inventory
+    local droppedItem = inventory:mousereleased(mouseX, mouseY, button)
+    
+    if droppedItem then
+        -- Convert mouse to world coordinates
+        local width, height = love.graphics.getDimensions()
+        local nx = (mouseX / width) * 2 - 1
+        local nz = (mouseY / height) * 2 - 1
+        local dropX = nx * 18
+        local dropZ = nz * 18
+        
+        -- Check if dropping on cannon
+        if droppedItem == "cannonball" and cannon and not cannonLoaded then
+            local cannonDist = math.sqrt((dropX - cannon.x)^2 + (dropZ - cannon.z)^2)
+            if cannonDist < 3.0 then
+                -- Valid interaction - walk to cannon and load
+                player:walkTo(cannon.x, cannon.z)
+                interactionMessage = "Walking to cannon to load..."
+                messageTimer = 2
+            else
+                interactionMessage = "Too far from cannon to load!"
+                messageTimer = 2
+            end
+        else
+            -- Invalid interaction
+            if droppedItem == "cannonball" and cannonLoaded then
+                interactionMessage = "Cannon is already loaded!"
+            else
+                interactionMessage = "Can't use that here."
+            end
+            messageTimer = 2
+        end
+    end
+end
+
+function room1_scene:keypressed(key)
+    return inventory:keypressed(key)
 end
 
 return room1_scene
