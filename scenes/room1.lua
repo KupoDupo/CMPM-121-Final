@@ -398,8 +398,8 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
             local width, height = love.graphics.getDimensions()
             local nx = (mouseX / width) * 2 - 1
             local nz = (mouseY / height) * 2 - 1
-            local targetX = nx * 18
-            local targetZ = nz * 18
+            local targetX = nx * 9
+            local targetZ = nz * 9
             
             -- Clamp target to world bounds
             if targetX < worldBounds.minX then targetX = worldBounds.minX end
@@ -423,8 +423,8 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
         local nz = (mouseY / height) * 2 - 1
 
         -- Scale and flip to match your floor coordinates
-        local targetX = nx * 18
-        local targetZ = nz * 18
+        local targetX = nx * 9
+        local targetZ = nz * 9
 
         -- Clamp target so player doesn't walk out of the camera bounds
         if targetX < worldBounds.minX then targetX = worldBounds.minX end
