@@ -1,4 +1,5 @@
 - [ ] Movement more refined
+- [ ] Don't die in room2 pit if bridge is up
 - [ ] When you enter a room there should be a message saying something about the room
 - [ ] Some way to examine the stuff you pickup
 - [ ] Inventory
