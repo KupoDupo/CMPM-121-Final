@@ -467,8 +467,8 @@ function room2_scene:mousepressed(mouseX, mouseY, button)
                 local width, height = love.graphics.getDimensions()
                 local nx = (mouseX / width) * 2 - 1
                 local nz = (mouseY / height) * 2 - 1
-                local targetX = nx * 18
-                local targetZ = nz * 18
+                local targetX = nx * 9
+                local targetZ = nz * 9
                 player:walkTo(targetX, targetZ)
             end
         else
@@ -515,8 +515,8 @@ function room2_scene:mousereleased(mouseX, mouseY, button)
         local width, height = love.graphics.getDimensions()
         local nx = (mouseX / width) * 2 - 1
         local nz = (mouseY / height) * 2 - 1
-        local dropX = nx * 18
-        local dropZ = nz * 18
+        local dropX = nx * 9
+        local dropZ = nz * 9
         
         -- Example interaction logic - you can add items and interactions here
         interactionMessage = "That item doesn't work here."

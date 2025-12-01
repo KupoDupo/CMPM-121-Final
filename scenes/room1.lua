@@ -429,8 +429,8 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
             local width, height = love.graphics.getDimensions()
             local nx = (mouseX / width) * 2 - 1
             local nz = (mouseY / height) * 2 - 1
-            local targetX = nx * 18
-            local targetZ = nz * 18
+            local targetX = nx * 9
+            local targetZ = nz * 9
             
             -- Clamp target to world bounds
             if targetX < worldBounds.minX then targetX = worldBounds.minX end
@@ -454,8 +454,8 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
         local nz = (mouseY / height) * 2 - 1
 
         -- Scale and flip to match your floor coordinates
-        local targetX = nx * 18
-        local targetZ = nz * 18
+        local targetX = nx * 9
+        local targetZ = nz * 9
 
         -- Clamp target so player doesn't walk out of the camera bounds
         if targetX < worldBounds.minX then targetX = worldBounds.minX end
@@ -547,8 +547,8 @@ function room1_scene:mousemoved(mouseX, mouseY)
     local width, height = love.graphics.getDimensions()
     local nx = (mouseX / width) * 2 - 1
     local nz = (mouseY / height) * 2 - 1
-    mouseWorldX = nx * 18
-    mouseWorldZ = nz * 18
+    mouseWorldX = nx * 9
+    mouseWorldZ = nz * 9
     
     -- Check if hovering over interactive objects
     isHoveringInteractive = false
@@ -580,8 +580,8 @@ function room1_scene:mousereleased(mouseX, mouseY, button)
         local width, height = love.graphics.getDimensions()
         local nx = (mouseX / width) * 2 - 1
         local nz = (mouseY / height) * 2 - 1
-        local dropX = nx * 18
-        local dropZ = nz * 18
+        local dropX = nx * 9
+        local dropZ = nz * 9
         
         -- Check if dropping on cannon
         if droppedItem == "cannonball" and cannon and not cannonLoaded then
