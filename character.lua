@@ -12,6 +12,7 @@ function character.new(name, startX, startY, startZ)
     local isMoving = false
     local stopThreshold = 0.08 -- when closer than this, snap to target
     local decelDistance = 0.8  -- start slowing down within this distance
+    local shadow = dream:loadObject("assets/cube") -- shadow 
 
   -- This looks for "player.dae" in your project folder.
     local object = dream:loadObject("assets/human_model")
@@ -23,6 +24,29 @@ function character.new(name, startX, startY, startZ)
     mat.metallic = 0.0               -- Plastic-like
     
     mat.cullMode = "none" 
+    
+    -- Apply Shadow
+    local shadowMat = dream:newMaterial()
+    shadowMat.color = {0, 0, 0, 0.10} 
+    shadowMat.roughness = 1.0 
+    shadowMat.metallic = 0.0
+    shadowMat.cullMode = "none"
+
+    -- apply to shadow
+    local function paintShadow(obj, material)
+        if obj.meshes then
+            for _, mesh in pairs(obj.meshes) do
+                mesh.material = material
+            end
+        end
+        if obj.objects then
+            for _, child in pairs(obj.objects) do
+                paintShadow(child, material)
+            end
+        end
+    end
+
+    paintShadow(shadow, shadowMat)
 
     -- 3. Recursive Paint Function
     -- Applies our double-sided material to every part of the model
@@ -87,12 +111,18 @@ function character.new(name, startX, startY, startZ)
     end
 
     function self:draw()
-        object:resetTransform()
-        object:translate(x, y, z)
-        object:rotateY(rotation) -- Apply rotation to face movement direction
+      -- Draw Shadow
+      shadow:resetTransform()
+      shadow:translate(x, y - 0.9, z)   -- slightly under the player's feet
+      shadow:rotateY(math.rad(45))
+      shadow:scale(1.3, 0.03, 1.3)
+      dream:draw(shadow)
         
-        -- Apply that 10x scale every frame
-        object:scale(0.5) 
+      -- Draw Player
+      object:resetTransform()
+      object:translate(x, y, z)
+      object:rotateY(rotation) -- Apply rotation to face movement direction
+      object:scale(0.5) -- Apply that 10x scale every frame
         
         dream:draw(object)
     end

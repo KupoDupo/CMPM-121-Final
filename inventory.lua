@@ -17,7 +17,7 @@ function Inventory:addItem(itemName, displayName)
         self.items[itemName] = {
             name = itemName,
             displayName = displayName or itemName,
-            icon = nil  -- Could load icon textures here
+            icon = love.graphics.newImage("assets/" .. itemName .. ".png")
         }
         return true
     end
@@ -153,8 +153,17 @@ function Inventory:draw(mouseX, mouseY)
             love.graphics.rectangle("line", x, y, slotSize, slotSize, 5, 5)
             
             -- Item icon (simplified - just draw colored square)
-            love.graphics.setColor(0.8, 0.6, 0.3)
-            love.graphics.rectangle("fill", x + 10, y + 10, slotSize - 20, slotSize - 20, 3, 3)
+            if itemData.icon then
+                love.graphics.setColor(1, 1, 1)
+                local icon = itemData.icon
+                local iconW, iconH = icon:getWidth(), icon:getHeight()
+                local scale = (slotSize - 20) / math.max(iconW, iconH)
+                love.graphics.draw(icon, x + 10, y + 10, 0, scale, scale)
+            else
+                -- fallback only if icon missing
+                love.graphics.setColor(0.8, 0.6, 0.3)
+                love.graphics.rectangle("fill", x + 10, y + 10, slotSize - 20, slotSize - 20, 3, 3)
+            end
             
             -- Item name
             love.graphics.setColor(1, 1, 1)
@@ -172,8 +181,16 @@ function Inventory:draw(mouseX, mouseY)
         love.graphics.setColor(0.2, 0.2, 0.25, 0.8)
         love.graphics.rectangle("fill", x, y, slotSize, slotSize, 5, 5)
         
-        love.graphics.setColor(0.8, 0.6, 0.3, 0.8)
-        love.graphics.rectangle("fill", x + 10, y + 10, slotSize - 20, slotSize - 20, 3, 3)
+        if self.items[self.draggingItem].icon then
+            love.graphics.setColor(1, 1, 1, 0.9)
+            local icon = self.items[self.draggingItem].icon
+            local iconW, iconH = icon:getWidth(), icon:getHeight()
+            local scale = (slotSize - 20) / math.max(iconW, iconH)
+            love.graphics.draw(icon, x + 10, y + 10, 0, scale, scale)
+        else
+            love.graphics.setColor(0.8, 0.6, 0.3, 0.8)
+            love.graphics.rectangle("fill", x + 10, y + 10, slotSize - 20, slotSize - 20)
+        end
         
         love.graphics.setColor(1, 1, 1, 0.8)
         love.graphics.printf(self.items[self.draggingItem].displayName, x, y + slotSize - 15, slotSize, "center")
