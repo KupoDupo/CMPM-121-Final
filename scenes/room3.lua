@@ -17,22 +17,20 @@ local interactionMessage = ""
 local messageTimer = 0
 
 -- Puzzle state
-door = { x = 0, z = -6, locked = true }
+local key1 = { x = -2, z = 2, collected = false }
 local key2 = { x = 2, z = 2, collected = false }
-local keySpawned = true
+
+door = { x = 0, z = -6, locked = true, disappeared = false }
 
 function room3_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
-
     inventory = Inventory.new()
     player = Character.new("Hero", 0, 0, 0)
-
     floor_tile = dream:loadObject("assets/cube")
     door_object = dream:loadObject("assets/cube")
     wall_left = dream:loadObject("assets/cube")
     wall_right = dream:loadObject("assets/cube")
-
-    sun = dream:newLight("sun", dream.vec3(10, 10, 10), dream.vec3(1, 1, 1), 1.5)
+    sun = dream:newLight("sun", dream.vec3(10, 10, 10), dream.vec3(1,1,1), 1.5)
     sun:addNewShadow()
 end
 
@@ -40,33 +38,35 @@ function room3_scene:update(dt)
     if player then
         player:update(dt)
 
-        -- Message timer
         if messageTimer > 0 then
             messageTimer = messageTimer - dt
         end
 
-        -- Key 2 pickup
-        if keySpawned and not key2.collected then
-            local dx = player:getX() - key2.x
-            local dz = player:getZ() - key2.z
-            if math.sqrt(dx*dx + dz*dz) < 1.2 then
-                key2.collected = true
-                inventory:addItem("Key2")
-                interactionMessage = "You picked up the second key!"
-                messageTimer = 3
+        -- Pick up keys
+        for _, key in ipairs({key1, key2}) do
+            if not key.collected then
+                local dx = player:getX() - key.x
+                local dz = player:getZ() - key.z
+                if math.sqrt(dx*dx + dz*dz) < 1.2 then
+                    key.collected = true
+                    inventory:addItem("Key" .. (_))
+                    interactionMessage = "You picked up Key " .. _ .. "!"
+                    messageTimer = 3
+                end
             end
         end
 
-        -- Unlock door if both keys are collected
-        if inventory:hasItem("Key") and inventory:hasItem("Key2") then
+        -- Unlock door when both keys are collected
+        if key1.collected and key2.collected then
             door.locked = false
+            door.disappeared = true
         end
 
-        -- Exit zone check
+        -- Exit through the door
         local px, pz = player:getX(), player:getZ()
-        if not door.locked and px >= -2 and px <= 2 and pz <= door.z + 1 then
-            print("Player reached the final exit! Loading ending scene...")
-            scenery.setScene("ending") -- Replace with your ending scene
+        if door.disappeared and px >= door.x - 1 and px <= door.x + 1 and pz <= door.z + 1 then
+            print("Player reached the exit! Loading ending scene...")
+            scenery.setScene("ending")
         end
 
         -- Fixed overhead camera
@@ -99,7 +99,7 @@ function room3_scene:draw()
     end
 
     -- Draw walls
-    if wall_left and wall_right and door then
+    if wall_left and wall_right then
         local wall_mat = dream:newMaterial()
         wall_mat.color = {0.55, 0.37, 0.17, 1}
         wall_mat.roughness = 0.6
@@ -107,58 +107,38 @@ function room3_scene:draw()
 
         local function paintRecursive(obj, material)
             if obj.meshes then
-                for _, mesh in pairs(obj.meshes) do
-                    mesh.material = material
-                end
+                for _, mesh in pairs(obj.meshes) do mesh.material = material end
             end
             if obj.objects then
-                for _, child in pairs(obj.objects) do
-                    paintRecursive(child, material)
-                end
+                for _, child in pairs(obj.objects) do paintRecursive(child, material) end
             end
         end
 
         -- Left wall
         paintRecursive(wall_left, wall_mat)
         wall_left:resetTransform()
-        local leftWallX = -15
-        local leftWallWidth = math.abs(leftWallX - (door.x - 1.0))
-        wall_left:translate(leftWallX + leftWallWidth/2, 1.5, door.z)
-        wall_left:scale(leftWallWidth, 3.0, 0.2)
+        wall_left:translate(-15 + (door.x-1+15)/2, 1.5, door.z)
+        wall_left:scale(math.abs(-15 - (door.x-1)), 3.0, 0.2)
         dream:draw(wall_left)
 
         -- Right wall
         paintRecursive(wall_right, wall_mat)
         wall_right:resetTransform()
-        local rightWallX = 15
-        local rightWallWidth = math.abs(rightWallX - (door.x + 1.0))
-        wall_right:translate(door.x + 1.0 + rightWallWidth/2, 1.5, door.z)
-        wall_right:scale(rightWallWidth, 3.0, 0.2)
+        wall_right:translate(door.x+1 + (15-(door.x+1))/2, 1.5, door.z)
+        wall_right:scale(math.abs(15-(door.x+1)), 3.0, 0.2)
         dream:draw(wall_right)
     end
 
-    -- Draw door
-    if door and door_object then
+    -- Draw door only if it hasn't disappeared
+    if door_object and not door.disappeared then
         local mat = dream:newMaterial()
-        if door.locked then
-            mat.color = {0.35, 0.20, 0.05, 1}
-        else
-            mat.color = {0.2, 1, 0.2, 1}
-        end
+        mat.color = door.locked and {0.35,0.20,0.05,1} or {0.2,1,0.2,1}
         mat.roughness = 0.6
         mat.cullMode = "none"
 
         local function paintRecursive(obj, material)
-            if obj.meshes then
-                for _, mesh in pairs(obj.meshes) do
-                    mesh.material = material
-                end
-            end
-            if obj.objects then
-                for _, child in pairs(obj.objects) do
-                    paintRecursive(child, material)
-                end
-            end
+            if obj.meshes then for _, mesh in pairs(obj.meshes) do mesh.material = material end end
+            if obj.objects then for _, child in pairs(obj.objects) do paintRecursive(child, material) end end
         end
 
         paintRecursive(door_object, mat)
@@ -168,95 +148,88 @@ function room3_scene:draw()
         dream:draw(door_object)
     end
 
-    -- Draw second key
-    if keySpawned and not key2.collected then
-        local mat = dream:newMaterial()
-        mat.color = {1, 1, 0.2, 1}
-        mat.roughness = 0.2
-        mat.cullMode = "none"
-
-        local function paintRecursive(obj, material)
-            if obj.meshes then
-                for _, mesh in pairs(obj.meshes) do
-                    mesh.material = material
-                end
+    -- Draw keys
+    for i, key in ipairs({key1,key2}) do
+        if not key.collected then
+            local mat = dream:newMaterial()
+            mat.color = {1, 1, 0.2, 1}
+            mat.roughness = 0.2
+            mat.cullMode = "none"
+            local key_obj = door_object -- reusing cube
+            local function paintRecursive(obj, material)
+                if obj.meshes then for _, mesh in pairs(obj.meshes) do mesh.material = material end end
+                if obj.objects then for _, child in pairs(obj.objects) do paintRecursive(child, material) end end
             end
-            if obj.objects then
-                for _, child in pairs(obj.objects) do
-                    paintRecursive(child, material)
-                end
-            end
+            paintRecursive(key_obj, mat)
+            key_obj:resetTransform()
+            key_obj:translate(key.x, 0.6, key.z)
+            key_obj:scale(0.4,0.4,0.4)
+            dream:draw(key_obj)
         end
-
-        paintRecursive(door_object, mat)
-        door_object:resetTransform()
-        door_object:translate(key2.x, 0.6, key2.z)
-        door_object:scale(0.4, 0.4, 0.4)
-        dream:draw(door_object)
     end
 
     dream:present()
 
     -- Draw inventory
-    local mx, my = love.mouse.getPosition()
-    inventory:draw(mx, my)
+    local mx,my = love.mouse.getPosition()
+    inventory:draw(mx,my)
 
-    -- Draw interaction message
-    if messageTimer > 0 then
-        love.graphics.setColor(0.2, 0.8, 0.2, math.min(1, messageTimer))
-        love.graphics.rectangle("fill", love.graphics.getWidth() / 2 - 150, 60, 300, 40, 5, 5)
-        love.graphics.setColor(1, 1, 1, math.min(1, messageTimer))
-        love.graphics.printf(interactionMessage, love.graphics.getWidth() / 2 - 145, 72, 290, "center")
+    -- Draw interaction messages
+    if messageTimer>0 then
+        love.graphics.setColor(0.2,0.8,0.2,math.min(1,messageTimer))
+        love.graphics.rectangle("fill", love.graphics.getWidth()/2-150,60,300,40,5,5)
+        love.graphics.setColor(1,1,1,math.min(1,messageTimer))
+        love.graphics.printf(interactionMessage, love.graphics.getWidth()/2-145,72,290,"center")
     end
 
-        love.graphics.setColor(1, 1, 1)
-    if door.locked then
-        love.graphics.print("Objective: Collect both keys to unlock the final door", 10, 40)
-    else
-        love.graphics.setColor(0, 1, 0)
-        love.graphics.print("Final door unlocked! Step through to finish!", 10, 40)
-        love.graphics.setColor(1, 1, 1)
-    end
+    love.graphics.setColor(1,1,1)
 end
 
-function room3_scene:mousepressed(mouseX, mouseY, button)
-    -- Check inventory first
-    if inventory:mousepressed(mouseX, mouseY, button) then
-        return
-    end
-    if button == 1 and player then
-        -- Don't allow world interaction if inventory is open
-        if inventory.isOpen then
-            return
+function room3_scene:mousepressed(mx,my,button)
+    if inventory:mousepressed(mx,my,button) then return end
+    if button==1 and player then
+        if inventory.isOpen then return end
+
+        -- Convert click to world coords
+        local w,h = love.graphics.getDimensions()
+        local nx = (mx/w)*2 - 1
+        local nz = (my/h)*2 - 1
+        local targetX,targetZ = nx*9, nz*9
+        if targetX<worldBounds.minX then targetX=worldBounds.minX end
+        if targetX>worldBounds.maxX then targetX=worldBounds.maxX end
+        if targetZ<worldBounds.minZ then targetZ=worldBounds.minZ end
+        if targetZ>worldBounds.maxZ then targetZ=worldBounds.maxZ end
+
+        -- Block walls only if door exists
+        if not door.disappeared then
+            local doorHalf = 1.0
+            local doorLeft, doorRight = door.x - doorHalf, door.x + doorHalf
+            local px,pz = player:getX(),player:getZ()
+            if pz > door.z and targetZ < door.z then
+                if door.locked or targetX<doorLeft or targetX>doorRight then
+                    targetZ = door.z + 0.6
+                end
+            end
+            if pz < door.z and targetZ > door.z then
+                if door.locked or targetX<doorLeft or targetX>doorRight then
+                    targetZ = door.z - 0.6
+                end
+            end
         end
 
-        -- Convert click to world coordinates
-        local width, height = love.graphics.getDimensions()
-        local nx = (mouseX / width) * 2 - 1
-        local nz = (mouseY / height) * 2 - 1
-        local targetX = nx * 9
-        local targetZ = nz * 9
-
-        -- Clamp to world bounds
-        if targetX < worldBounds.minX then targetX = worldBounds.minX end
-        if targetX > worldBounds.maxX then targetX = worldBounds.maxX end
-        if targetZ < worldBounds.minZ then targetZ = worldBounds.minZ end
-        if targetZ > worldBounds.maxZ then targetZ = worldBounds.maxZ end
-
-        player:walkTo(targetX, targetZ)
+        player:walkTo(targetX,targetZ)
     end
 end
 
-function room3_scene:mousemoved(mouseX, mouseY)
-    local width, height = love.graphics.getDimensions()
-    local nx = (mouseX / width) * 2 - 1
-    local nz = (mouseY / height) * 2 - 1
-    mouseWorldX = nx * 9
-    mouseWorldZ = nz * 9
+function room3_scene:mousemoved(mx,my)
+    local w,h = love.graphics.getDimensions()
+    local nx = (mx/w)*2 - 1
+    local nz = (my/h)*2 - 1
+    mouseWorldX, mouseWorldZ = nx*9, nz*9
 end
 
-function room3_scene:mousereleased(mouseX, mouseY, button)
-    inventory:mousereleased(mouseX, mouseY, button)
+function room3_scene:mousereleased(mx,my,button)
+    inventory:mousereleased(mx,my,button)
 end
 
 function room3_scene:keypressed(key)
