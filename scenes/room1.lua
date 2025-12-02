@@ -28,7 +28,7 @@ local messageTimer = 0
 function room1_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
 
-    inventory = Inventory.new()
+    inventory = globalInventory  -- Use global inventory
     player = Character.new("Hero", 0, 0, 0)
     
     -- Spawn Cannonball at (3, 3)

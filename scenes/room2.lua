@@ -19,6 +19,9 @@ local interactionMessage = ""
 local messageTimer = 0
 local playerDead = false
 local deathTimer = 0
+local key_object
+local key = { x = 5, z = 5, collected = false}
+local keySpawned = false
 
 -- Puzzle state
 local blocks = {}
@@ -30,13 +33,14 @@ local initialBlockPositions = {}
 function room2_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.15, 0.2)
 
-    inventory = Inventory.new()
+    inventory = globalInventory  -- Use global inventory
     player = Character.new("Hero", 0, 0, 8)  -- Start at back of room
     
     floor_tile = dream:loadObject("assets/cube")
     gap_object = dream:loadObject("assets/cube")
     bridge_object = dream:loadObject("assets/cube")
     door_object = dream:loadObject("assets/cube")
+    key_object = dream:loadObject("assets/cube")
     
     -- Create 3 pressure plates in front of the gap
     pressurePlates = {
@@ -138,27 +142,39 @@ function room2_scene:update(dt)
         
         if allActivated and not bridge.extended then
             bridge.extended = true
+            keySpawned = true
             door.locked = false
-            print("Bridge extended! All pressure plates activated!")
-        elseif not allActivated and bridge.extended then
-            bridge.extended = false
-            door.locked = true
+            print("Bridge extended! All pressure plates activated! Pick up the Key")
+        
         end
         
-        -- Check if player walks through unlocked door
-        if door and not door.locked then
-            local px, pz = player:getX(), player:getZ()
-            if pz < door.z - 1.0 and math.abs(px - door.x) < 1.5 then
-                print("Level complete! (Would transition to next room)")
-                -- scenery.setScene("room3")
-            end
+        -- Key pickup
+        if keySpawned and not key.collected then
+          local dx = player:getX() - key.x
+          local dz = player:getZ() - key.z
+          if math.sqrt(dx*dx + dz*dz) < 1.2 then
+            key.collected = true
+            inventory:addItem("Key")   -- Or whatever your inventory uses
+            interactionMessage = "You picked up a key!"
+            messageTimer = 3
+          end
         end
-        
         -- Fixed overhead camera
         dream.camera:resetTransform()
         dream.camera:translate(0, 8, 0)
         dream.camera:rotateX(-math.pi / 2)
     end
+    if bridge.extended then
+      local px, pz = player:getX(), player:getZ()
+      -- Define exit zone at far end of bridge
+      if px >= -2 and px <= 2 and pz <= door.z + 1 and not playerDead then
+        -- Transition to Room 3
+        print("Player reached the exit! Loading next scene...")
+        scenery.setScene("room3")-- Make sure your sceneManager has room3 loaded
+      end
+    end
+  
+    
     
     dream:update(dt)
 end
@@ -336,6 +352,31 @@ function room2_scene:draw()
             door_object:scale(2, 3, 0.2)
             dream:draw(door_object)
         end
+        if keySpawned and not key.collected then
+          local mat = dream:newMaterial()
+          mat.color = {1, 1, 0.2, 1}
+          mat.roughness = 0.2
+          mat.cullMode = "none"
+
+        local function paintRecursive(obj, material)
+          if obj.meshes then
+          for _, mesh in pairs(obj.meshes) do
+                mesh.material = material
+          end
+        end
+        if obj.objects then
+            for _, child in pairs(obj.objects) do
+                paintRecursive(child, material)
+            end
+        end
+    end
+
+    paintRecursive(key_object, mat)
+    key_object:resetTransform()
+    key_object:translate(key.x, 0.6, key.z)
+    key_object:scale(0.4, 0.4, 0.4)
+    dream:draw(key_object)
+end
     end
     
     dream:present()
