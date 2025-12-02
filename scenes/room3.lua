@@ -17,8 +17,9 @@ local interactionMessage = ""
 local messageTimer = 0
 
 -- Puzzle state
-local key1 = { x = -2, z = 2, collected = false }
-local key2 = { x = 2, z = 2, collected = false }
+-- One key is carried over from Room 2 (inventory item name: "Key").
+-- The second key is local to Room 3 and will be added to inventory as "Key_room3".
+local key_local = { x = 2, z = 2, collected = false }
 
 door = { x = 0, z = -6, locked = true, disappeared = false }
 
@@ -42,22 +43,21 @@ function room3_scene:update(dt)
             messageTimer = messageTimer - dt
         end
 
-        -- Pick up keys
-        for _, key in ipairs({key1, key2}) do
-            if not key.collected then
-                local dx = player:getX() - key.x
-                local dz = player:getZ() - key.z
-                if math.sqrt(dx*dx + dz*dz) < 1.2 then
-                    key.collected = true
-                    inventory:addItem("Key" .. (_))
-                    interactionMessage = "You picked up Key " .. _ .. "!"
-                    messageTimer = 3
-                end
+        -- Pick up the local Room 3 key
+        if not key_local.collected then
+            local dx = player:getX() - key_local.x
+            local dz = player:getZ() - key_local.z
+            if math.sqrt(dx*dx + dz*dz) < 1.2 then
+                key_local.collected = true
+                inventory:addItem("Key_room3", "Room 3 Key")
+                interactionMessage = "You picked up the key from this room!"
+                messageTimer = 3
             end
         end
 
-        -- Unlock door when both keys are collected
-        if key1.collected and key2.collected then
+        -- Unlock door only when player has the key from Room 2 ("Key")
+        -- and the local Room 3 key ("Key_room3").
+        if inventory:hasItem("Key") and inventory:hasItem("Key_room3") then
             door.locked = false
             door.disappeared = true
         end
@@ -148,24 +148,22 @@ function room3_scene:draw()
         dream:draw(door_object)
     end
 
-    -- Draw keys
-    for i, key in ipairs({key1,key2}) do
-        if not key.collected then
-            local mat = dream:newMaterial()
-            mat.color = {1, 1, 0.2, 1}
-            mat.roughness = 0.2
-            mat.cullMode = "none"
-            local key_obj = door_object -- reusing cube
-            local function paintRecursive(obj, material)
-                if obj.meshes then for _, mesh in pairs(obj.meshes) do mesh.material = material end end
-                if obj.objects then for _, child in pairs(obj.objects) do paintRecursive(child, material) end end
-            end
-            paintRecursive(key_obj, mat)
-            key_obj:resetTransform()
-            key_obj:translate(key.x, 0.6, key.z)
-            key_obj:scale(0.4,0.4,0.4)
-            dream:draw(key_obj)
+    -- Draw local Room 3 key (player must also have the Room 2 key in inventory to unlock door)
+    if key_local and not key_local.collected then
+        local mat = dream:newMaterial()
+        mat.color = {1, 1, 0.2, 1}
+        mat.roughness = 0.2
+        mat.cullMode = "none"
+        local key_obj = door_object -- reusing cube
+        local function paintRecursive(obj, material)
+            if obj.meshes then for _, mesh in pairs(obj.meshes) do mesh.material = material end end
+            if obj.objects then for _, child in pairs(obj.objects) do paintRecursive(child, material) end end
         end
+        paintRecursive(key_obj, mat)
+        key_obj:resetTransform()
+        key_obj:translate(key_local.x, 0.6, key_local.z)
+        key_obj:scale(0.4,0.4,0.4)
+        dream:draw(key_obj)
     end
 
     dream:present()
