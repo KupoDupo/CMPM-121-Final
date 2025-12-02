@@ -9,3 +9,4 @@
     - [ ] Should be able to drop items from inventory
     - [ ] Room2 boxes should appear in inventory when picked up
 - [ ] Expand room2 bridge gap
+- [ ] Remove bump3d

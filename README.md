@@ -118,3 +118,18 @@ Completing F1 has made us realize that Lua/LÖVE would be a little more difficul
 
 ## F1 - Steps 4 and 6 complete
 There is now a functional puzzle for the first room.  We changed it from what we originally planned to make it more of a physics based puzzle.  You pick up a cannonball and load it into a cannon in the room.  Then you can aim the cannon and try to shoot the door so you can escape the room.  If you miss the door the cannonball will bounce off the walls and hit the floor.  You get three chances to hit the door, after which the cannonball will break from hitting the walls.  When this happens a restart button will appear for you to try the level over again.  There are game objectives in the corner to help direct the player on what to do.  If you do knock the door down you can walk through and be taken to the second room, which is currently under development.
+
+# Devlog Entry - [12/01]
+
+## How we satisfied the software requirements
+
+1. The game still uses the LÖVE engine to create a 3D environment using the 3DreamEngine and for collision detection, which is what we used in F1.
+2. The player can enter three different rooms/scenes in the game.  Room 1 is the cannon puzzle room, Room 2 is a bridge crossing room, and Room 3 currently contains one of the keys that will be used.  We plan on adding an actual puzzle to the third room later on.
+3. You can click on objects to move towards them and pick them up.  For example, in Room 1 you can click on the cannonball to pick it up and load it into the cannon from your inventory.  In Room 2 you can pick up boxes to help you cross the bridge gap.
+4. Objects you pickup can be stored in the inventory and moved to different scenes.  For example, in Room 2 you can pick up a key after solving a puzzle and take the key to Room 3 to help you unlock the exit door.
+5. The game contains a physics-based puzzle in Room 1 where you must aim and shoot a cannonball at a door to knock it down.  The cannonball will bounce off walls and the floor, and you have three attempts to hit the door before the cannonball breaks.  There is also a puzzle in Room 2 where you must place boxes on platforms to cross a bridge gap and get it to Room 3.  It also spawns a key you need for Room 3.
+6. In Room 1, the player must skillfully aim and shoot a cannonball at a door.  If they miss too often the ball will break and they will have to restart the level.  In Room 2, they can fall into a pit if they don't solve the puzzle correctly and will have to restart the level.
+7. Once you exit Room 3 an ending screen appears telling you that you have solved all the puzzles and escaped the haunted house.
+
+## Reflection
+We made sure to give ourselves enough time to work on F2 this time around, which really helped us iron out a lot of the bugs we were having with the physics and inventory systems.  We also added more features to the game such as an inventory UI, objective text, and room descriptions to help guide the player.  Overall we are happy with how the game is coming along and are excited to add more content and polish to it in the future.  We still have a lot of work to do, but we are confident that we can complete it in time for the final submission.
