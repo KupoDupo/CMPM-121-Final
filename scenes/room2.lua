@@ -33,7 +33,7 @@ local initialBlockPositions = {}
 function room2_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.15, 0.2)
 
-    inventory = Inventory.new()
+    inventory = globalInventory  -- Use global inventory
     player = Character.new("Hero", 0, 0, 8)  -- Start at back of room
     
     floor_tile = dream:loadObject("assets/cube")

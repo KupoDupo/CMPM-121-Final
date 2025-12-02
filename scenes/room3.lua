@@ -25,7 +25,7 @@ door = { x = 0, z = -6, locked = true, disappeared = false }
 
 function room3_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
-    inventory = Inventory.new()
+    inventory = globalInventory  -- Use global inventory
     player = Character.new("Hero", 0, 0, 0)
     floor_tile = dream:loadObject("assets/cube")
     door_object = dream:loadObject("assets/cube")
