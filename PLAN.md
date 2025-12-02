@@ -4,7 +4,7 @@
 - [ ] Some way to examine the stuff you pickup
 - [ ] Inventory
     - [ ] Should close after interaction
-    - [ ] Actual object models should appear in inventory
+    - [x] Actual object models should appear in inventory
     - [ ] Should be able to use items from inventory on other objects
     - [ ] Should be able to drop items from inventory
     - [ ] Room2 boxes should appear in inventory when picked up
