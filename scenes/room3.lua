@@ -26,18 +26,44 @@ door = { x = 0, z = -6, locked = true, disappeared = false }
 function room3_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
     inventory = globalInventory  -- Use global inventory
-    player = Character.new("Hero", 0, 0, 0)
+    
+    -- Restore player position from save or use default
+    local startX, startY, startZ = 0, 0, 0
+    if _G.savedPlayerPosition then
+        startX = _G.savedPlayerPosition.x
+        startY = _G.savedPlayerPosition.y
+        startZ = _G.savedPlayerPosition.z
+        _G.savedPlayerPosition = nil
+    end
+    player = Character.new("Hero", startX, startY, startZ)
+    _G.currentPlayer = player
+    
     floor_tile = dream:loadObject("assets/cube")
     door_object = dream:loadObject("assets/cube")
     wall_left = dream:loadObject("assets/cube")
     wall_right = dream:loadObject("assets/cube")
     sun = dream:newLight("sun", dream.vec3(10, 10, 10), dream.vec3(1,1,1), 1.5)
     sun:addNewShadow()
+    
+    -- Restore room state if loading from save
+    if _G.room3State then
+        local state = _G.room3State
+        key_local.collected = state.keyCollected
+        door.locked = not state.doorUnlocked
+        door.disappeared = state.doorUnlocked
+        _G.room3State = nil
+    end
 end
 
 function room3_scene:update(dt)
     if player then
         player:update(dt)
+        
+        -- Capture current state for save system
+        _G.room3State = {
+            keyCollected = key_local.collected,
+            doorUnlocked = door.disappeared
+        }
 
         if messageTimer > 0 then
             messageTimer = messageTimer - dt

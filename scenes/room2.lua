@@ -34,7 +34,17 @@ function room2_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.15, 0.2)
 
     inventory = globalInventory  -- Use global inventory
-    player = Character.new("Hero", 0, 0, 8)  -- Start at back of room
+    
+    -- Restore player position from save or use default
+    local startX, startY, startZ = 0, 0, 8
+    if _G.savedPlayerPosition then
+        startX = _G.savedPlayerPosition.x
+        startY = _G.savedPlayerPosition.y
+        startZ = _G.savedPlayerPosition.z
+        _G.savedPlayerPosition = nil
+    end
+    player = Character.new("Hero", startX, startY, startZ)
+    _G.currentPlayer = player
     
     floor_tile = dream:loadObject("assets/cube")
     gap_object = dream:loadObject("assets/cube")
@@ -63,6 +73,31 @@ function room2_scene:load()
         { x = 6, z = 3 }
     }
     
+    -- Restore room state if loading from save
+    if _G.room2State then
+        local state = _G.room2State
+        if state.blockPositions then
+            for i, pos in ipairs(state.blockPositions) do
+                if blocks[i] then
+                    blocks[i].x = pos.x
+                    blocks[i].z = pos.z
+                end
+            end
+        end
+        if state.pressurePlates then
+            for i, plateState in ipairs(state.pressurePlates) do
+                if pressurePlates[i] then
+                    pressurePlates[i].activated = plateState.activated
+                end
+            end
+        end
+        bridge.extended = state.bridgeExtended
+        door.locked = state.doorLocked
+        key.collected = state.keyCollected
+        keySpawned = state.keySpawned
+        _G.room2State = nil
+    end
+    
     -- Create visual objects for blocks
     for i = 1, #blocks do
         block_objects[i] = dream:loadObject("assets/cube")
@@ -80,6 +115,24 @@ end
 function room2_scene:update(dt)
     if player then
         player:update(dt)
+        
+        -- Capture current state for save system
+        local blockPositions = {}
+        for i, block in ipairs(blocks) do
+            table.insert(blockPositions, { x = block.x, z = block.z })
+        end
+        local plateStates = {}
+        for i, plate in ipairs(pressurePlates) do
+            table.insert(plateStates, { activated = plate.activated })
+        end
+        _G.room2State = {
+            blockPositions = blockPositions,
+            pressurePlates = plateStates,
+            bridgeExtended = bridge.extended,
+            doorLocked = door.locked,
+            keyCollected = key.collected,
+            keySpawned = keySpawned
+        }
         
         -- Death timer
         if playerDead then

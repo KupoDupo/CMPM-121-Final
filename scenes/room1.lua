@@ -29,7 +29,22 @@ function room1_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
 
     inventory = globalInventory  -- Use global inventory
-    player = Character.new("Hero", 0, 0, 0)
+    
+    -- Restore player position from save or use default
+    local startX, startY, startZ = 0, 0, 0
+    print("=== ROOM1 LOAD ===")
+    print("Checking for _G.savedPlayerPosition:", _G.savedPlayerPosition and "YES" or "NO")
+    if _G.savedPlayerPosition then
+        startX = _G.savedPlayerPosition.x
+        startY = _G.savedPlayerPosition.y
+        startZ = _G.savedPlayerPosition.z
+        print("Restored player position:", startX, startY, startZ)
+        _G.savedPlayerPosition = nil  -- Clear after use
+    else
+        print("Using default player position")
+    end
+    player = Character.new("Hero", startX, startY, startZ)
+    _G.currentPlayer = player  -- Make globally accessible for save system
     
     -- Spawn Cannonball at (3, 3)
     cannonball = Cannonball.new(1, 3)
@@ -39,6 +54,30 @@ function room1_scene:load()
 
     -- Locked door: place at the back of the (smaller) map (moved closer into frame)
     door = { x = 0, z = -6, locked = true }
+    
+    -- Restore room state if loading from save
+    print("Checking for _G.room1State:", _G.room1State and "YES" or "NO")
+    if _G.room1State then
+        local state = _G.room1State
+        print("Restoring room1 state:")
+        print("  doorLocked:", state.doorLocked)
+        print("  doorFallen:", state.doorFallen)
+        print("  cannonballExists:", state.cannonballExists)
+        door.locked = state.doorLocked
+        door.fallen = state.doorFallen
+        if state.cannonballPosition then
+            cannonball = Cannonball.new(state.cannonballPosition.x, state.cannonballPosition.z)
+        end
+        cannonball.exists = state.cannonballExists
+        cannonLoaded = state.cannonLoaded
+        missCount = state.missCount
+        gameOver = state.gameOver
+        _G.room1State = nil  -- Clear after use
+        print("Room1 state restored successfully")
+    else
+        print("No room1 state to restore - using defaults")
+    end
+    print("==================")
 
     -- create a dedicated object for the door so it doesn't reuse the floor tile transforms
     door_object = dream:loadObject("assets/cube")
@@ -56,6 +95,17 @@ end
 function room1_scene:update(dt)
     if player then
         player:update(dt)
+        
+        -- Capture current state for save system
+        _G.room1State = {
+            doorLocked = door.locked,
+            doorFallen = door.fallen or false,
+            cannonballExists = cannonball and cannonball.exists or false,
+            cannonballPosition = cannonball and { x = cannonball.x, z = cannonball.z } or { x = 1, z = 3 },
+            cannonLoaded = cannonLoaded,
+            missCount = missCount,
+            gameOver = gameOver
+        }
         
         -- Update door explosion/falling animation
         if door and door.exploding then
