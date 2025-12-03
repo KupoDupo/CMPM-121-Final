@@ -3,79 +3,65 @@ local SaveManager = {}
 -- Save system configuration
 SaveManager.autoSaveInterval = 10  -- Auto-save every 10 seconds
 SaveManager.maxSaveSlots = 5       -- Support up to 5 manual save slots
-SaveManager.autoSaveFile = "autosave.json"
+SaveManager.autoSaveFile = "autosave.lua"
 SaveManager.lastAutoSaveTime = 0
 
--- Utility function to serialize tables to JSON
-local function tableToJSON(t, indent)
+-- Utility function to serialize tables to Lua code
+local function serializeTable(t, indent)
     indent = indent or ""
-    local result = "{\n"
-    local first = true
-    for k, v in pairs(t) do
-        if not first then
-            result = result .. ",\n"
-        end
-        first = false
-        
-        local key = type(k) == "number" and '["' .. k .. '"]' or '["' .. tostring(k) .. '"]'
-        result = result .. indent .. "  " .. key .. ": "
-        
-        if type(v) == "table" then
-            result = result .. tableToJSON(v, indent .. "  ")
-        elseif type(v) == "string" then
-            result = result .. '"' .. v:gsub('"', '\\"') .. '"'
-        elseif type(v) == "boolean" then
-            result = result .. tostring(v)
-        elseif type(v) == "number" then
-            result = result .. tostring(v)
+    if type(t) ~= "table" then
+        if type(t) == "string" then
+            return string.format("%q", t)
         else
-            result = result .. "null"
+            return tostring(t)
         end
     end
-    result = result .. "\n" .. indent .. "}"
+    
+    local result = "{\n"
+    for k, v in pairs(t) do
+        local key
+        if type(k) == "number" then
+            key = "[" .. k .. "]"
+        else
+            key = "[" .. string.format("%q", k) .. "]"
+        end
+        
+        result = result .. indent .. "  " .. key .. " = "
+        
+        if type(v) == "table" then
+            result = result .. serializeTable(v, indent .. "  ")
+        elseif type(v) == "string" then
+            result = result .. string.format("%q", v)
+        elseif type(v) == "number" or type(v) == "boolean" then
+            result = result .. tostring(v)
+        else
+            result = result .. "nil"
+        end
+        result = result .. ",\n"
+    end
+    result = result .. indent .. "}"
     return result
 end
 
--- Utility function to deserialize JSON to tables
-local function jsonToTable(json)
-    if not json or json == "" then 
-        print("jsonToTable: empty or nil input")
+-- Utility function to deserialize Lua code to tables
+local function deserializeTable(code)
+    if not code or code == "" then 
+        print("deserializeTable: empty or nil input")
         return nil 
     end
     
-    -- Convert JSON to Lua table syntax
-    local luaCode = json
-    -- Replace ["key"]: with ["key"] =
-    luaCode = luaCode:gsub('%["([^"]+)"%]%s*:%s*', '["%1"] = ')
-    -- Replace "key": with ["key"] =
-    luaCode = luaCode:gsub('"([^"]+)"%s*:%s*', '["%1"] = ')
-    -- Replace remaining colons with equals (for nested objects)
-    luaCode = luaCode:gsub(':%s*', ' = ')
-    
-    -- Wrap in return statement
-    luaCode = "return " .. luaCode
-    
-    print("Attempting to parse Lua code...")
-    
-    -- Safely load and execute
-    local func, err = load(luaCode)
+    local func, err = load("return " .. code)
     if not func then
-        print("jsonToTable: load failed -", err)
+        print("deserializeTable: load failed -", err)
         return nil
     end
     
     local success, result = pcall(func)
-    
     if success and result then
-        print("jsonToTable: successfully parsed")
-        if type(result) == "table" then
-            print("  currentScene:", result.currentScene)
-            print("  version:", result.version)
-            print("  timestamp:", result.timestamp)
-        end
+        print("deserializeTable: successfully parsed")
         return result
     else
-        print("jsonToTable: execution failed -", tostring(result))
+        print("deserializeTable: execution failed -", tostring(result))
         return nil
     end
 end
@@ -100,7 +86,7 @@ function SaveManager.captureGameState(currentScene, player, inventory)
         for itemName, itemData in pairs(inventory.items) do
             table.insert(state.inventory, {
                 name = itemName,
-                displayName = itemData.displayName
+                displayName = itemData.displayName or itemName
             })
         end
     end
@@ -145,15 +131,14 @@ end
 -- Save game state to a file
 function SaveManager.saveToFile(filename, state)
     local saveDir = love.filesystem.getSaveDirectory()
-    local json = tableToJSON(state)
+    local serialized = serializeTable(state)
     
     print("Attempting to save to: " .. saveDir .. "/" .. filename)
-    print("Save data size: " .. #json .. " bytes")
+    print("Save data size: " .. #serialized .. " bytes")
     
-    local success, message = love.filesystem.write(filename, json)
+    local success, message = love.filesystem.write(filename, serialized)
     if success then
         print("✓ Game saved successfully to: " .. saveDir .. "/" .. filename)
-        -- Verify the file was written
         local info = love.filesystem.getInfo(filename)
         if info then
             print("✓ Verified file exists, size: " .. info.size .. " bytes")
@@ -180,16 +165,15 @@ function SaveManager.loadFromFile(filename)
     local info = love.filesystem.getInfo(filename)
     print("✓ File found, size: " .. info.size .. " bytes")
     
-    local json, err = love.filesystem.read(filename)
-    if not json then
+    local code, err = love.filesystem.read(filename)
+    if not code then
         print("✗ Failed to read save file: " .. (err or "unknown error"))
         return nil
     end
     
     print("✓ File read successfully, parsing...")
     
-    -- Protect against JSON parsing errors
-    local success, state = pcall(jsonToTable, json)
+    local success, state = pcall(deserializeTable, code)
     if success and state then
         print("✓ Save file loaded and parsed successfully!")
         return state
@@ -246,7 +230,7 @@ function SaveManager.manualSave(slotNumber, currentScene, player, inventory)
         return false
     end
     
-    local filename = "save_slot_" .. slotNumber .. ".json"
+    local filename = "save_slot_" .. slotNumber .. ".lua"
     local state = SaveManager.captureGameState(currentScene, player, inventory)
     return SaveManager.saveToFile(filename, state)
 end
@@ -258,7 +242,7 @@ function SaveManager.loadSlot(slotNumber)
         return nil
     end
     
-    local filename = "save_slot_" .. slotNumber .. ".json"
+    local filename = "save_slot_" .. slotNumber .. ".lua"
     return SaveManager.loadFromFile(filename)
 end
 
@@ -297,7 +281,7 @@ function SaveManager.getAvailableSaves()
     
     -- Check manual save slots
     for i = 1, SaveManager.maxSaveSlots do
-        local filename = "save_slot_" .. i .. ".json"
+        local filename = "save_slot_" .. i .. ".lua"
         if SaveManager.hasSave(filename) then
             table.insert(saves, {
                 type = "manual",

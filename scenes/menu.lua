@@ -89,6 +89,9 @@ function menu_scene:rebuildButtons()
                 -- Set the global player reference BEFORE restoring state
                 _G.currentPlayer = nil  -- Will be created by scene
                 
+                -- Set flag to prevent auto-save during restoration
+                setRestoringGame(true)
+                
                 -- Restore the game state
                 SaveManager.restoreGameState(state)
                 
@@ -99,6 +102,10 @@ function menu_scene:rebuildButtons()
                 
                 -- Load the scene
                 scenery.setScene(state.currentScene)
+                
+                -- Clear restoration flag after scene is loaded
+                setRestoringGame(false)
+                
                 print("Scene set to:", state.currentScene)
                 print("===============================")
             else

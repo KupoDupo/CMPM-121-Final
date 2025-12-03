@@ -19,23 +19,31 @@ local SaveManager = require("savemanager")
 local currentSceneName = "menu"
 local autoSaveNotification = ""
 local autoSaveTimer = 0
+local isRestoringGame = false  -- Flag to prevent auto-save during restoration
 
 -- Override scenery.setScene to track scene changes and trigger auto-save
 local originalSetScene = scenery.setScene
 function scenery.setScene(key, data)
     currentSceneName = key
     
-    -- Auto-save on scene transitions (except menu)
-    if key ~= "menu" and key ~= "ending" then
+    -- Auto-save on scene transitions (except menu and when restoring)
+    if key ~= "menu" and key ~= "ending" and not isRestoringGame then
         local player = _G.currentPlayer
         local state = SaveManager.captureGameState(key, player, globalInventory)
         SaveManager.saveToFile(SaveManager.autoSaveFile, state)
         autoSaveNotification = "Game Auto-Saved"
         autoSaveTimer = 2
         print("Auto-saved on scene transition to: " .. key)
+    elseif isRestoringGame then
+        print("Skipping auto-save during game restoration")
     end
     
     originalSetScene(key, data)
+end
+
+-- Expose function to control restoration flag
+function setRestoringGame(value)
+    isRestoringGame = value
 end
     
 function love.load()
