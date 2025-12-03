@@ -100,7 +100,7 @@ function room2_scene:load()
     
     -- Create visual objects for blocks
     for i = 1, #blocks do
-        block_objects[i] = dream:loadObject("assets/cube")
+        block_objects[i] = dream:loadObject("assets/crate")
     end
     
     -- Create visual objects for pressure plates
@@ -370,6 +370,7 @@ function room2_scene:draw()
                 paintRecursive(block_objects[i], mat)
                 block_objects[i]:resetTransform()
                 block_objects[i]:translate(block.x, 0.6, block.z)
+                block_objects[i]:rotateX(math.pi)
                 block_objects[i]:scale(block.width, block.height, block.depth)
                 dream:draw(block_objects[i])
             end
