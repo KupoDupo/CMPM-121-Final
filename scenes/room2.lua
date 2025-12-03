@@ -50,7 +50,7 @@ function room2_scene:load()
     gap_object = dream:loadObject("assets/cube")
     bridge_object = dream:loadObject("assets/cube")
     door_object = dream:loadObject("assets/cube")
-    key_object = dream:loadObject("assets/cube")
+    key_object = dream:loadObject("assets/key")
     
     -- Create 3 pressure plates in front of the gap
     pressurePlates = {

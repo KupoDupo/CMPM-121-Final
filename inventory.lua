@@ -17,7 +17,7 @@ function Inventory:addItem(itemName, displayName)
         -- TODO: Revert to image path when Key images are properly created
         local icon = nil
         -- Keys use placeholder (yellow square drawn in draw function)
-        if itemName ~= "Key" and itemName ~= "Key_room3" then
+        if itemName ~= "Key" and itemName ~= "Key_room3" and itemName ~= "Key_room1" then
             icon = love.graphics.newImage("assets/" .. itemName .. ".png")
         end
         
