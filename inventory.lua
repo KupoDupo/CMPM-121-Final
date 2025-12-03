@@ -14,10 +14,11 @@ end
 
 function Inventory:addItem(itemName, displayName)
     if not self.items[itemName] then
-        -- TODO: Revert to image path when Key images are properly created
         local icon = nil
-        -- Keys use placeholder (yellow square drawn in draw function)
-        if itemName ~= "Key" and itemName ~= "Key_room3" and itemName ~= "Key_room1" then
+        -- Keys use key.png
+        if itemName == "Key" or itemName == "Key_room3" or itemName == "Key_room1" then
+            icon = love.graphics.newImage("assets/key.png")
+        else
             icon = love.graphics.newImage("assets/" .. itemName .. ".png")
         end
         
@@ -166,10 +167,6 @@ function Inventory:draw(mouseX, mouseY)
                 local iconW, iconH = icon:getWidth(), icon:getHeight()
                 local scale = (slotSize - 20) / math.max(iconW, iconH)
                 love.graphics.draw(icon, x + 10, y + 10, 0, scale, scale)
-            else
-                -- Placeholder for items without icons (e.g., Key)
-                love.graphics.setColor(0.9, 0.8, 0.1)  -- Yellow for Key
-                love.graphics.rectangle("fill", x + 10, y + 10, slotSize - 20, slotSize - 20, 3, 3)
             end
             
             -- Item name
@@ -194,10 +191,6 @@ function Inventory:draw(mouseX, mouseY)
             local iconW, iconH = icon:getWidth(), icon:getHeight()
             local scale = (slotSize - 20) / math.max(iconW, iconH)
             love.graphics.draw(icon, x + 10, y + 10, 0, scale, scale)
-        else
-            -- Placeholder for items without icons (e.g., Key)
-            love.graphics.setColor(0.9, 0.8, 0.1, 0.8)  -- Yellow for Key
-            love.graphics.rectangle("fill", x + 10, y + 10, slotSize - 20, slotSize - 20)
         end
         
         love.graphics.setColor(1, 1, 1, 0.8)
