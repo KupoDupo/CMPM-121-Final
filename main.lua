@@ -20,6 +20,7 @@ local currentSceneName = "menu"
 local autoSaveNotification = ""
 local autoSaveTimer = 0
 local isRestoringGame = false  -- Flag to prevent auto-save during restoration
+local saveIcon = nil  -- Will hold the save icon image
 
 -- Override scenery.setScene to track scene changes and trigger auto-save
 local originalSetScene = scenery.setScene
@@ -48,48 +49,34 @@ end
     
 function love.load()
   dream:init()
-  scenery:hook(love)
+  
+  -- Load save icon
+  saveIcon = love.graphics.newImage("assets/save-icon.png")
   
   -- Print save directory for debugging
   print("===========================================")
   print("Save Directory: " .. love.filesystem.getSaveDirectory())
   print("===========================================")
   
+  -- Hook scenery but exclude update and draw so we can handle them ourselves
+  local callbacksToHook = {}
+  for k in pairs(love.handlers) do
+    if k ~= "update" and k ~= "draw" then
+      table.insert(callbacksToHook, k)
+    end
+  end
+  scenery:hook(love, callbacksToHook)
+  
   scenery.setScene("menu")
 end
 
--- Debug keypressed
-function love.keypressed(key)
-    if key == "f5" then
-        -- Manual save trigger for testing
-        print("\n=== F5 PRESSED: Manual Save Test ===")
-        local player = _G.currentPlayer
-        if player then
-            local state = SaveManager.captureGameState(currentSceneName, player, globalInventory)
-            local success = SaveManager.saveToFile(SaveManager.autoSaveFile, state)
-            print("Manual save result: " .. tostring(success))
-        else
-            print("No player found - start a game first")
-        end
-        print("====================================\n")
-    elseif key == "f6" then
-        -- Manual load test
-        print("\n=== F6 PRESSED: Manual Load Test ===")
-        print("Checking for: " .. SaveManager.autoSaveFile)
-        local state = SaveManager.loadAutoSave()
-        if state then
-            print("✓ Load successful!")
-            print("  Scene: " .. tostring(state.currentScene))
-            print("  Version: " .. tostring(state.version))
-        else
-            print("✗ Load failed")
-        end
-        print("====================================\n")
-    end
-end
+-- Debug keypressed - handled by scenery hook
 
--- Update function to handle auto-save timer
+-- Update function - call scenery update then our logic
 function love.update(dt)
+    -- Call scenery update for current scene
+    scenery:update(dt)
+    
     -- Update auto-save notification timer
     if autoSaveTimer > 0 then
         autoSaveTimer = autoSaveTimer - dt
@@ -106,38 +93,43 @@ function love.update(dt)
     end
 end
 
--- Draw auto-save notification
+-- Draw function - call scenery draw then our overlay
 function love.draw()
-    -- Draw auto-save notification with icon
-    if autoSaveTimer > 0 then
+    -- Call scenery draw for current scene
+    scenery:draw()
+    
+    -- Draw auto-save notification with icon on top of everything
+    if autoSaveTimer > 0 and saveIcon then
         local alpha = math.min(1, autoSaveTimer)
-        local x = love.graphics.getWidth() - 170
-        local y = love.graphics.getHeight() - 45
+        local iconSize = 32  -- Size of the icon
+        local padding = 10
+        local textWidth = love.graphics.getFont():getWidth(autoSaveNotification)
+        local boxWidth = iconSize + textWidth + padding * 3
+        local boxHeight = iconSize + padding * 2
+        
+        local x = love.graphics.getWidth() - boxWidth - 15
+        local y = love.graphics.getHeight() - boxHeight - 15
         
         -- Background box
         love.graphics.setColor(0.2, 0.2, 0.2, 0.9 * alpha)
-        love.graphics.rectangle("fill", x, y, 160, 35, 5, 5)
+        love.graphics.rectangle("fill", x, y, boxWidth, boxHeight, 5, 5)
         
         -- Border
         love.graphics.setColor(0.2, 1, 0.2, alpha)
         love.graphics.setLineWidth(2)
-        love.graphics.rectangle("line", x, y, 160, 35, 5, 5)
+        love.graphics.rectangle("line", x, y, boxWidth, boxHeight, 5, 5)
         
-        -- Save icon (floppy disk style)
-        love.graphics.setColor(0.2, 1, 0.2, alpha)
-        local iconX = x + 10
-        local iconY = y + 8
-        -- Outer rectangle
-        love.graphics.rectangle("fill", iconX, iconY, 16, 18)
-        -- Inner detail (dark square)
-        love.graphics.setColor(0.2, 0.2, 0.2, alpha)
-        love.graphics.rectangle("fill", iconX + 3, iconY + 10, 10, 6)
-        -- Top notch
-        love.graphics.rectangle("fill", iconX + 10, iconY, 6, 4)
+        -- Draw save icon image
+        love.graphics.setColor(1, 1, 1, alpha)
+        local iconX = x + padding
+        local iconY = y + padding
+        local scaleX = iconSize / saveIcon:getWidth()
+        local scaleY = iconSize / saveIcon:getHeight()
+        love.graphics.draw(saveIcon, iconX, iconY, 0, scaleX, scaleY)
         
         -- Text
         love.graphics.setColor(0.2, 1, 0.2, alpha)
-        love.graphics.print(autoSaveNotification, x + 32, y + 10)
+        love.graphics.print(autoSaveNotification, iconX + iconSize + padding, y + (boxHeight - love.graphics.getFont():getHeight()) / 2)
         
         love.graphics.setColor(1, 1, 1)
         love.graphics.setLineWidth(1)
