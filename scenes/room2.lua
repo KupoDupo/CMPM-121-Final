@@ -616,6 +616,7 @@ function room2_scene:mousereleased(mouseX, mouseY, button)
         -- Example interaction logic - you can add items and interactions here
         interactionMessage = "That item doesn't work here."
         messageTimer = 2
+        inventory:close()
     end
 end
 

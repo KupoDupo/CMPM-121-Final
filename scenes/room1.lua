@@ -704,6 +704,7 @@ function room1_scene:mousereleased(mouseX, mouseY, button)
                 player:walkTo(cannon.x, cannon.z)
                 interactionMessage = "Walking to cannon to load..."
                 messageTimer = 2
+                inventory:close()
             else
                 interactionMessage = "Too far from cannon to load!"
                 messageTimer = 2

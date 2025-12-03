@@ -253,7 +253,12 @@ function room3_scene:mousemoved(mx,my)
 end
 
 function room3_scene:mousereleased(mx,my,button)
-    inventory:mousereleased(mx,my,button)
+    local droppedItem = inventory:mousereleased(mx,my,button)
+    
+    if droppedItem then
+        -- Close inventory after any interaction attempt
+        inventory:close()
+    end
 end
 
 function room3_scene:keypressed(key)
