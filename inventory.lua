@@ -18,6 +18,9 @@ function Inventory:addItem(itemName, displayName)
         -- Keys use key.png
         if itemName == "Key" or itemName == "Key_room3" or itemName == "Key_room1" then
             icon = love.graphics.newImage("assets/key.png")
+        -- Boxes use crate.jpg
+        elseif itemName:match("^box%d+$") then
+            icon = love.graphics.newImage("assets/crate.jpg")
         else
             icon = love.graphics.newImage("assets/" .. itemName .. ".png")
         end
@@ -75,8 +78,12 @@ function Inventory:stopDrag()
 end
 
 function Inventory:getSlotPosition(itemName)
-    local startX = love.graphics.getWidth() / 2 - 150
-    local startY = love.graphics.getHeight() / 2 - 50
+    local panelW = 350
+    local panelH = 200
+    local panelX = love.graphics.getWidth() - panelW - 20
+    local panelY = love.graphics.getHeight() - panelH - 20
+    local startX = panelX + 45
+    local startY = panelY + 60
     local slotSize = 60
     local padding = 10
     
@@ -119,8 +126,8 @@ function Inventory:draw(mouseX, mouseY)
     -- Draw inventory panel
     local panelW = 350
     local panelH = 200
-    local panelX = love.graphics.getWidth() / 2 - panelW / 2
-    local panelY = love.graphics.getHeight() / 2 - panelH / 2
+    local panelX = love.graphics.getWidth() - panelW - 20
+    local panelY = love.graphics.getHeight() - panelH - 20
     
     -- Panel background
     love.graphics.setColor(0.1, 0.1, 0.15, 0.95)
@@ -212,10 +219,14 @@ function Inventory:mousepressed(x, y, button)
             end
         else
             -- Check if clicking on an item to drag
+            local panelW = 350
+            local panelH = 200
+            local panelX = love.graphics.getWidth() - panelW - 20
+            local panelY = love.graphics.getHeight() - panelH - 20
             local slotSize = 60
             local padding = 10
-            local startX = love.graphics.getWidth() / 2 - 150
-            local startY = love.graphics.getHeight() / 2 - 50
+            local startX = panelX + 45
+            local startY = panelY + 60
             
             local index = 0
             for itemName, _ in pairs(self.items) do
