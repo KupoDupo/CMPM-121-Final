@@ -704,14 +704,14 @@ function room2_scene:mousereleased(mouseX, mouseY, button)
                 local dx = dropX - plate.x
                 local dz = dropZ - plate.z
                 local dist = math.sqrt(dx*dx + dz*dz)
-                if dist < 1.0 then
+                if dist < 1.5 then  -- Increased range for easier placement
                     -- Check if this plate already has a box
                     local plateHasBox = false
                     for j, placedBox in ipairs(placedBoxes) do
                         local pdx = placedBox.x - plate.x
                         local pdz = placedBox.z - plate.z
                         local pdist = math.sqrt(pdx*pdx + pdz*pdz)
-                        if pdist < 0.8 then
+                        if pdist < 0.5 then  -- Stricter check for existing boxes
                             plateHasBox = true
                             break
                         end
@@ -721,7 +721,7 @@ function room2_scene:mousereleased(mouseX, mouseY, button)
                         interactionMessage = "Plate already has a box!"
                         messageTimer = 2
                     else
-                        -- Place box on the plate
+                        -- Place box on the plate center
                         table.insert(placedBoxes, { x = plate.x, z = plate.z, id = boxId })
                         inventory:removeItem(droppedItem)
                         interactionMessage = "Box " .. boxId .. " placed on plate!"
