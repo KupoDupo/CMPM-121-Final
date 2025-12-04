@@ -402,7 +402,9 @@ function room2_scene:draw()
         
         -- Draw placed boxes from inventory
         for i, placedBox in ipairs(placedBoxes) do
-            if block_objects[1] then  -- Use first block object as template
+            -- Use the appropriate block object based on box ID
+            local objIndex = placedBox.id
+            if objIndex and block_objects[objIndex] then
                 local mat = dream:newMaterial()
                 mat.color = {0.6, 0.4, 0.2, 1}  -- Brown stone
                 mat.roughness = 0.7
@@ -421,12 +423,12 @@ function room2_scene:draw()
                     end
                 end
                 
-                paintRecursive(block_objects[1], mat)
-                block_objects[1]:resetTransform()
-                block_objects[1]:translate(placedBox.x, 0.6, placedBox.z)
-                block_objects[1]:rotateX(math.pi)
-                block_objects[1]:scale(1.2, 1.2, 1.2)
-                dream:draw(block_objects[1])
+                paintRecursive(block_objects[objIndex], mat)
+                block_objects[objIndex]:resetTransform()
+                block_objects[objIndex]:translate(placedBox.x, 0.6, placedBox.z)
+                block_objects[objIndex]:rotateX(math.pi)
+                block_objects[objIndex]:scale(1.2, 1.2, 1.2)
+                dream:draw(block_objects[objIndex])
             end
         end
         
@@ -695,11 +697,49 @@ function room2_scene:mousereleased(mouseX, mouseY, button)
         if droppedItem:match("^box%d+$") then
             -- Extract box ID from item name (e.g., "box1" -> 1)
             local boxId = tonumber(droppedItem:match("%d+"))
-            -- Place the box at the drop location with its ID
-            table.insert(placedBoxes, { x = dropX, z = dropZ, id = boxId })
-            inventory:removeItem(droppedItem)
-            interactionMessage = "Box " .. boxId .. " placed!"
-            messageTimer = 2
+            
+            -- Check if dropped on a pressure plate
+            local onPlate = false
+            for i, plate in ipairs(pressurePlates) do
+                local dx = dropX - plate.x
+                local dz = dropZ - plate.z
+                local dist = math.sqrt(dx*dx + dz*dz)
+                if dist < 1.0 then
+                    -- Check if this plate already has a box
+                    local plateHasBox = false
+                    for j, placedBox in ipairs(placedBoxes) do
+                        local pdx = placedBox.x - plate.x
+                        local pdz = placedBox.z - plate.z
+                        local pdist = math.sqrt(pdx*pdx + pdz*pdz)
+                        if pdist < 0.8 then
+                            plateHasBox = true
+                            break
+                        end
+                    end
+                    
+                    if plateHasBox then
+                        interactionMessage = "Plate already has a box!"
+                        messageTimer = 2
+                    else
+                        -- Place box on the plate
+                        table.insert(placedBoxes, { x = plate.x, z = plate.z, id = boxId })
+                        inventory:removeItem(droppedItem)
+                        interactionMessage = "Box " .. boxId .. " placed on plate!"
+                        messageTimer = 2
+                    end
+                    onPlate = true
+                    break
+                end
+            end
+            
+            if not onPlate then
+                -- Not on a plate, place it at drop location
+                table.insert(placedBoxes, { x = dropX, z = dropZ, id = boxId })
+                inventory:removeItem(droppedItem)
+                interactionMessage = "Box " .. boxId .. " placed!"
+                messageTimer = 2
+            end
+            
             inventory:close()
         else
             -- Invalid item for this room
