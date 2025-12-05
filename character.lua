@@ -115,7 +115,7 @@ function character.new(name, startX, startY, startZ)
     function self:draw()
       -- Draw Shadow
       shadow:resetTransform()
-      shadow:translate(x, y - 0.9, z)   -- slightly under the player's feet
+      shadow:translate(x, y, z)
       shadow:rotateY(math.rad(45))
       shadow:scale(1.3, 0.03, 1.3)
       dream:draw(shadow)
