@@ -8,7 +8,6 @@ local floor_tile
 local victory_object
 local inventory
 local messageTimer = 0
-local victoryMessage = "Congratulations! You've completed all the puzzles!"
 local fadeIn = 0
 local particles = {}
 local numParticles = 20
@@ -195,20 +194,20 @@ function ending_scene:draw()
     
     -- Victory message
     love.graphics.setColor(1, 1, 0.5, fadeIn)
-    love.graphics.printf(victoryMessage, 0, height / 2 - 60, width, "center")
+    love.graphics.printf(_G.localization:get("victory_message"), 0, height / 2 - 60, width, "center")
     
     love.graphics.setColor(0.7, 0.9, 1, fadeIn)
-    love.graphics.printf("You escaped the chambers!", 0, height / 2 - 20, width, "center")
+    love.graphics.printf(_G.localization:get("you_escaped"), 0, height / 2 - 20, width, "center")
     
     -- Credits
     love.graphics.setColor(0.6, 0.6, 0.6, fadeIn * 0.7)
-    love.graphics.printf("Thanks for playing!", 0, height / 2 + 40, width, "center")
+    love.graphics.printf(_G.localization:get("thanks_playing"), 0, height / 2 + 40, width, "center")
     
     -- Restart prompt
     if fadeIn >= 1 then
         local pulse = math.sin(love.timer.getTime() * 3) * 0.3 + 0.7
         love.graphics.setColor(1, 1, 1, pulse)
-        love.graphics.printf("Press R to return to menu", 0, height - 60, width, "center")
+        love.graphics.printf(_G.localization:get("press_r_menu"), 0, height - 60, width, "center")
     end
     
     love.graphics.setColor(1, 1, 1)

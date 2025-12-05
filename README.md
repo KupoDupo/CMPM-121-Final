@@ -133,3 +133,16 @@ There is now a functional puzzle for the first room.  We changed it from what we
 
 ## Reflection
 We made sure to give ourselves enough time to work on F2 this time around, which really helped us iron out a lot of the bugs we were having with the physics and inventory systems.  We also added more features to the game such as an inventory UI, objective text, and room descriptions to help guide the player.  Overall we are happy with how the game is coming along and are excited to add more content and polish to it in the future.  We still have a lot of work to do, but we are confident that we can complete it in time for the final submission.
+
+# Devlog Entry - [12/04]
+
+## Selected Requirements
+1. International Languages Requirement: Support three different natural languages including English, a language with a logographic script (e.g. 中文), and a language with a right-to-left script (e.g. العربية).  
+We decided to support these three languages in our game (English, Chinese characters, and Arabic). We chose this system since we had minor textual elements in our game so we could meaningfully, but mostly easily switch up our game to support this feature. We also thought it'd be good practice since this is a nice feature to support in future games accessiblity wise.  
+
+## How we satisfied the software requirments 
+1. International Language Requirement:  
+We created a localization file (localization.lua) where the strings in our game are stored with their three different language versions (English, Chinese, Arabic). We translated these using google Translate and AI so we're not 100% sure how grammatically correct or accurate these translations are but it was our best bet available. Outside files then call the localization object this file creates to load in strings in the language users select like: "_G.localization:get("cannon_loaded")". _G is Lua's global table, anything stored here is accessible from anywhere in your program. So in main when we write the two lines: local Localization = require("localization") we create our localization for the three languages (from localization.lua) and then we make this global namespace so all files can access it with line: _G.localization = Localization. The following syntax: ":get("key") gets the translated version of the key - in this case of the cannon_loaded string. When adding future strings to the game developers will have add the string key to the lua file and then add the 3 translated versions in the format the rest of the file follows.  
+We didn't want to use a translation API from online since that felt like taking this an extra step further than it needed to be taken but I do feel like it might've ended up being less work. It would've also been more easily built upon for if we took this game further. Using some kind of API that just needs to be called on strings to automatically translate them rather than needing to have each translation set up in our files does seem like it would be much easier to repeat over and over, especially since we're not language experts ourselves. But oh well, maybe something for next time!  
+
+## Reflection 

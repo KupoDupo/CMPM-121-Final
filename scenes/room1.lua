@@ -127,7 +127,7 @@ function room1_scene:update(dt)
                 print("Cannonball added to inventory:", success)
                 print("Inventory has cannonball:", inventory:hasItem("cannonball"))
                 missedShot = false
-                interactionMessage = "Cannonball collected!"
+                interactionMessage = _G.localization:get("cannonball_collected")
                 messageTimer = 2
             end
         end
@@ -145,7 +145,7 @@ function room1_scene:update(dt)
                 cannonLoaded = true
                 inventory:removeItem("cannonball")
                 aimingMode = true
-                interactionMessage = "Cannon loaded! Click to aim and fire."
+                interactionMessage = _G.localization:get("cannon_loaded")
                 messageTimer = 2
             end
         end
@@ -357,7 +357,7 @@ function room1_scene:draw()
         love.graphics.setColor(1, 1, 1)
         
         -- Draw instruction text
-        love.graphics.print("AIMING MODE: Click to shoot!", width/2 - 100, 10)
+        love.graphics.print(_G.localization:get("aiming_mode"), width/2 - 100, 10)
     end
     
     -- Draw custom cursor if hovering over interactive object
@@ -386,8 +386,8 @@ function room1_scene:draw()
     -- Objective display
     if gameOver then
         love.graphics.setColor(1, 0, 0)
-        love.graphics.print("PUZZLE FAILED!", 10, 60)
-        love.graphics.print("The cannonball shattered after 3 misses.", 10, 80)
+        love.graphics.print(_G.localization:get("puzzle_failed"), 10, 60)
+        love.graphics.print(_G.localization:get("cannonball_shattered"), 10, 80)
         love.graphics.setColor(1, 1, 1)
         
         -- Draw restart button
@@ -405,36 +405,36 @@ function room1_scene:draw()
         love.graphics.setColor(0, 0, 0)
         love.graphics.rectangle("line", buttonX, buttonY, buttonWidth, buttonHeight)
         love.graphics.setColor(1, 1, 1)
-        love.graphics.print("RESTART PUZZLE", buttonX + 10, buttonY + 8)
+        love.graphics.print(_G.localization:get("restart_puzzle"), buttonX + 10, buttonY + 8)
         
         love.graphics.setColor(1, 1, 1)
     elseif door and (door.exploding or door.fallen) then
-        love.graphics.print("Objective: LEAVE THE ROOM!", 10, 60)
+        love.graphics.print(_G.localization:get("obj_leave_room"), 10, 60)
         love.graphics.setColor(0, 1, 0)
-        love.graphics.print("Door destroyed! Head through the opening!", 10, 80)
+        love.graphics.print(_G.localization:get("door_destroyed"), 10, 80)
         love.graphics.setColor(1, 1, 1)
     elseif missedShot then
         love.graphics.setColor(1, 0.5, 0)
-        love.graphics.print("Objective: TRY AGAIN - Pick up the cannonball", 10, 60)
+        love.graphics.print(_G.localization:get("obj_try_again"), 10, 60)
         love.graphics.setColor(1, 1, 1)
-        love.graphics.print("Attempts remaining: " .. (3 - missCount), 10, 80)
+        love.graphics.print(_G.localization:get("attempts_remaining") .. (3 - missCount), 10, 80)
     elseif not inventory:hasItem("cannonball") then
-        love.graphics.print("Objective: Find the Cannonball", 10, 60)
+        love.graphics.print(_G.localization:get("obj_find_cannonball"), 10, 60)
     elseif inventory:hasItem("cannonball") and not cannonLoaded and not aimingMode then
-        love.graphics.print("Objective: Load the Cannonball into the Cannon", 10, 60)
-        love.graphics.print("(Walk near the cannon or drag from inventory)", 10, 80)
+        love.graphics.print(_G.localization:get("obj_load_cannon"), 10, 60)
+        love.graphics.print(_G.localization:get("load_hint"), 10, 80)
     elseif aimingMode then
-        love.graphics.print("Objective: BLAST THE DOOR!", 10, 60)
+        love.graphics.print(_G.localization:get("obj_blast_door"), 10, 60)
         love.graphics.setColor(1, 0, 0)
-        love.graphics.print("BLAST THE DOOR!", 10, 80)
+        love.graphics.print(_G.localization:get("blast_door"), 10, 80)
         love.graphics.setColor(1, 1, 1)
         if missCount > 0 then
             love.graphics.setColor(1, 0.5, 0)
-            love.graphics.print("Attempts remaining: " .. (3 - missCount), 10, 100)
+            love.graphics.print(_G.localization:get("attempts_remaining") .. (3 - missCount), 10, 100)
             love.graphics.setColor(1, 1, 1)
         end
     else
-        love.graphics.print("Objective: BLAST THE DOOR!", 10, 60)
+        love.graphics.print(_G.localization:get("obj_blast_door"), 10, 60)
     end
 end
 
@@ -468,7 +468,7 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
                 door.fallen = false
                 door.explosionTime = 0
                 cannonball = Cannonball.new(1, 3)
-                interactionMessage = "Puzzle restarted!"
+                interactionMessage = _G.localization:get("puzzle_restarted")
                 messageTimer = 2
             end
             return
@@ -639,18 +639,18 @@ function room1_scene:mousereleased(mouseX, mouseY, button)
             if cannonDist < 3.0 then
                 -- Valid interaction - walk to cannon and load
                 player:walkTo(cannon.x, cannon.z)
-                interactionMessage = "Walking to cannon to load..."
+                interactionMessage = _G.localization:get("walking_to_cannon")
                 messageTimer = 2
             else
-                interactionMessage = "Too far from cannon to load!"
+                interactionMessage = _G.localization:get("too_far_cannon")
                 messageTimer = 2
             end
         else
             -- Invalid interaction
             if droppedItem == "cannonball" and cannonLoaded then
-                interactionMessage = "Cannon is already loaded!"
+                interactionMessage = _G.localization:get("cannon_already_loaded")
             else
-                interactionMessage = "Can't use that here."
+                interactionMessage = _G.localization:get("cant_use_here")
             end
             messageTimer = 2
         end

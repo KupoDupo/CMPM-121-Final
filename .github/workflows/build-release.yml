@@ -30,7 +30,7 @@ jobs:
             3DreamEngine/ \
             assets/ \
             scenes/ \
-            -x "*/.*" "*/.DS_Store" "*/__pycache__/*"
+            -x "*/.*" "*/.DS_Store" "*/__pycache__/*" "*.rockspec"
           
           if [ ! -f build/game.love ] || [ ! -s build/game.love ]; then
             echo "Error: game.love was not created or is empty"

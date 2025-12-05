@@ -99,7 +99,7 @@ function Inventory:draw(mouseX, mouseY)
         love.graphics.setColor(0.2, 0.2, 0.3, 0.9)
         love.graphics.rectangle("fill", love.graphics.getWidth() - 110, 10, 100, 30, 5, 5)
         love.graphics.setColor(1, 1, 1)
-        love.graphics.print("Inventory (I)", love.graphics.getWidth() - 105, 17)
+        love.graphics.print(_G.localization:get("inventory_hint"), love.graphics.getWidth() - 105, 17)
         
         -- Draw item count
         local itemCount = 0
@@ -132,9 +132,9 @@ function Inventory:draw(mouseX, mouseY)
     
     -- Title
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("INVENTORY", panelX + 10, panelY + 10)
-    love.graphics.print("(Drag items onto objects to use)", panelX + 10, panelY + 30)
-    love.graphics.print("Press I to close", panelX + 10, panelY + panelH - 25)
+    love.graphics.print(_G.localization:get("inventory_title"), panelX + 10, panelY + 10)
+    love.graphics.print(_G.localization:get("inventory_drag_hint"), panelX + 10, panelY + 30)
+    love.graphics.print(_G.localization:get("inventory_close"), panelX + 10, panelY + panelH - 25)
     
     -- Draw inventory slots
     local slotSize = 60

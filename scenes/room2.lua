@@ -154,7 +154,7 @@ function room2_scene:update(dt)
             -- Player fell into the gap!
             playerDead = true
             deathTimer = 0
-            interactionMessage = "You fell into the gap!"
+            interactionMessage = _G.localization:get("fell_into_gap")
             messageTimer = 3
             return
         end
@@ -208,7 +208,7 @@ function room2_scene:update(dt)
           if math.sqrt(dx*dx + dz*dz) < 1.2 then
             key.collected = true
             inventory:addItem("Key")   -- Or whatever your inventory uses
-            interactionMessage = "You picked up a key!"
+            interactionMessage = _G.localization:get("picked_up_key")
             messageTimer = 3
           end
         end
@@ -457,7 +457,7 @@ end
     
     -- UI
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("Room 2: Pressure Plate Bridge", 10, 10)
+    love.graphics.print(_G.localization:get("room2_title"), 10, 10)
     
     -- Death screen
     if playerDead then
@@ -467,15 +467,15 @@ end
         
         -- Death message
         love.graphics.setColor(1, 0, 0)
-        love.graphics.printf("YOU FELL!", 0, love.graphics.getHeight() / 2 - 60, love.graphics.getWidth(), "center")
+        love.graphics.printf(_G.localization:get("you_fell"), 0, love.graphics.getHeight() / 2 - 60, love.graphics.getWidth(), "center")
         love.graphics.setColor(1, 1, 1)
-        love.graphics.printf("You fell into the gap and died.", 0, love.graphics.getHeight() / 2 - 20, love.graphics.getWidth(), "center")
+        love.graphics.printf(_G.localization:get("fell_died"), 0, love.graphics.getHeight() / 2 - 20, love.graphics.getWidth(), "center")
         
         -- Respawn button
         love.graphics.setColor(0.3, 0.3, 0.4, 0.9)
         love.graphics.rectangle("fill", love.graphics.getWidth() / 2 - 60, love.graphics.getHeight() / 2 + 20, 120, 40, 5, 5)
         love.graphics.setColor(1, 1, 1)
-        love.graphics.printf("RESPAWN", love.graphics.getWidth() / 2 - 60, love.graphics.getHeight() / 2 + 30, 120, "center")
+        love.graphics.printf(_G.localization:get("respawn"), love.graphics.getWidth() / 2 - 60, love.graphics.getHeight() / 2 + 30, 120, "center")
         
         return
     end
@@ -488,12 +488,12 @@ end
     
     if bridge.extended then
         love.graphics.setColor(0, 1, 0)
-        love.graphics.print("Bridge activated! Cross to the exit!", 10, 40)
+        love.graphics.print(_G.localization:get("bridge_activated"), 10, 40)
         love.graphics.setColor(1, 1, 1)
     else
-        love.graphics.print("Objective: Place blocks on all pressure plates", 10, 40)
-        love.graphics.print(string.format("Plates activated: %d/3", activatedCount), 10, 60)
-        love.graphics.print("Drag blocks by clicking and holding", 10, 80)
+        love.graphics.print(_G.localization:get("room2_objective"), 10, 40)
+        love.graphics.print(_G.localization:get("plates_activated") .. string.format("%d/3", activatedCount), 10, 60)
+        love.graphics.print(_G.localization:get("drag_blocks_hint"), 10, 80)
     end
 end
 
@@ -524,7 +524,7 @@ function room2_scene:mousepressed(mouseX, mouseY, button)
                 bridge.extended = false
                 door.locked = true
                 
-                interactionMessage = "Respawned! Be careful not to fall."
+                interactionMessage = _G.localization:get("respawned")
                 messageTimer = 2
             end
             return
@@ -613,7 +613,7 @@ function room2_scene:mousereleased(mouseX, mouseY, button)
         local dropZ = nz * 9
         
         -- Example interaction logic - you can add items and interactions here
-        interactionMessage = "That item doesn't work here."
+        interactionMessage = _G.localization:get("item_doesnt_work")
         messageTimer = 2
     end
 end

@@ -76,7 +76,7 @@ function room3_scene:update(dt)
             if math.sqrt(dx*dx + dz*dz) < 1.2 then
                 key_local.collected = true
                 inventory:addItem("Key_room3", "Room 3 Key")
-                interactionMessage = "You picked up the key from this room!"
+                interactionMessage = _G.localization:get("picked_up_key")
                 messageTimer = 3
             end
         end
@@ -206,6 +206,24 @@ function room3_scene:draw()
         love.graphics.printf(interactionMessage, love.graphics.getWidth()/2-145,72,290,"center")
     end
 
+    love.graphics.setColor(1,1,1)
+    
+    -- Draw objectives
+    love.graphics.print(_G.localization:get("room3_title"), 10, 10)
+    
+    if door.disappeared then
+        love.graphics.setColor(0, 1, 0)
+        love.graphics.print(_G.localization:get("room3_door_unlocked"), 10, 40)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.print(_G.localization:get("room3_obj_exit"), 10, 60)
+    else
+        love.graphics.print(_G.localization:get("room3_obj_find_keys"), 10, 40)
+        local keysCollected = 0
+        if inventory:hasItem("Key") then keysCollected = keysCollected + 1 end
+        if inventory:hasItem("Key_room3") then keysCollected = keysCollected + 1 end
+        love.graphics.print(_G.localization:get("room3_keys_collected") .. keysCollected .. "/2", 10, 60)
+    end
+    
     love.graphics.setColor(1,1,1)
 end
 

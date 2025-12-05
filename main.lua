@@ -12,6 +12,10 @@ local bump = require 'bump-3dpd'
 local Inventory = require("inventory")
 globalInventory = Inventory.new()
 
+-- Localization system
+local Localization = require("localization")
+_G.localization = Localization  -- Make globally accessible
+
 -- Save system
 local SaveManager = require("savemanager")
 
@@ -32,7 +36,7 @@ function scenery.setScene(key, data)
         local player = _G.currentPlayer
         local state = SaveManager.captureGameState(key, player, globalInventory)
         SaveManager.saveToFile(SaveManager.autoSaveFile, state)
-        autoSaveNotification = "Game Auto-Saved"
+        autoSaveNotification = _G.localization:get("autosave_notification")
         autoSaveTimer = 2
         print("Auto-saved on scene transition to: " .. key)
     elseif isRestoringGame then
@@ -49,6 +53,9 @@ end
     
 function love.load()
   dream:init()
+  
+  -- Initialize Unicode font support (must be done after love.load)
+  _G.localization:initFont()
   
   -- Load save icon
   saveIcon = love.graphics.newImage("assets/save-icon.png")
@@ -86,7 +93,7 @@ function love.update(dt)
     if currentSceneName ~= "menu" and currentSceneName ~= "ending" then
         local player = _G.currentPlayer
         if SaveManager.updateAutoSave(dt, currentSceneName, player, globalInventory) then
-            autoSaveNotification = "Game Auto-Saved"
+            autoSaveNotification = _G.localization:get("autosave_notification")
             autoSaveTimer = 2
             print("Periodic auto-save triggered")
         end

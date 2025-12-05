@@ -34,7 +34,7 @@ jobs:
             3DreamEngine/ \
             assets/ \
             scenes/ \
-            -x "*/.*" "*/.DS_Store" "*/__pycache__/*"
+            -x "*/.*" "*/.DS_Store" "*/__pycache__/*" "*.rockspec"
           ls -lh build/game.love
           # Verify main.lua is at root of zip
           unzip -l build/game.love | head -20
