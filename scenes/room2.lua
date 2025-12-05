@@ -67,6 +67,13 @@ function room2_scene:load()
         { x = 6, z = 3, width = 1.2, height = 1.2, depth = 1.2, exists = true }
     }
     
+    -- Check if boxes are already in inventory and mark them as not existing in world
+    for i = 1, #blocks do
+        if inventory:hasItem("box" .. i) then
+            blocks[i].exists = false
+        end
+    end
+    
     -- Save initial block positions for respawn
     initialBlockPositions = {
         { x = -6, z = 6 },
