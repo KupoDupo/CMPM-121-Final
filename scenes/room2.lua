@@ -521,6 +521,7 @@ end
     
     -- UI
     love.graphics.setColor(1, 1, 1)
+    love.graphics.setFont(_G.localization:getFont())
     love.graphics.print(_G.localization:get("room2_title"), 10, 10)
     
     -- Death screen

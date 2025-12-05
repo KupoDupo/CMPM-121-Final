@@ -437,6 +437,7 @@ function room1_scene:draw()
     love.graphics.setColor(1, 1, 1)
     
     -- Objective display
+    love.graphics.setFont(_G.localization:getFont())
     if gameOver then
         love.graphics.setColor(1, 0, 0)
         love.graphics.print(_G.localization:get("puzzle_failed"), 10, 60)

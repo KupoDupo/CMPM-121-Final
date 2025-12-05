@@ -20,15 +20,26 @@ Localization.textDirection = {
 
 -- Initialize fonts with Unicode support
 function Localization:initFont()
-    -- Try loading Arabic font with variable font support
-    local arabicSuccess, arabicFontOrError = pcall(love.graphics.newFont, "assets/fonts/KFGQPC Uthmanic Script HAFS Regular.otf", 16)
+    -- LÖVE automatically loads all glyphs from TrueType/OpenType fonts
+    -- The issue with squares is usually because the font file doesn't contain those glyphs
+    -- or the font isn't being applied when rendering
+    
+    -- Try loading Arabic font
+    local arabicSuccess, arabicFontOrError = pcall(love.graphics.newFont, "assets/fonts/NotoSansArabic-VariableFont_wdth,wght.ttf", 16)
     if arabicSuccess and arabicFontOrError then
         self.arabicFont = arabicFontOrError
         print("Arabic font (NotoSansArabic) loaded successfully")
     else
         print("Warning: Arabic font failed to load. Error: " .. tostring(arabicFontOrError))
-        print("Arabic text may not display correctly.")
-        self.arabicFont = love.graphics.newFont(16)
+        -- Try the other Arabic font
+        local fallbackSuccess, fallbackFont = pcall(love.graphics.newFont, "assets/fonts/KFGQPC Uthmanic Script HAFS Regular.otf", 16)
+        if fallbackSuccess then
+            self.arabicFont = fallbackFont
+            print("Arabic KFGQPC font loaded successfully")
+        else
+            self.arabicFont = love.graphics.newFont(16)
+            print("Both Arabic fonts failed. Using default font.")
+        end
     end
     
     -- Try loading Chinese (Simplified) font
@@ -38,24 +49,15 @@ function Localization:initFont()
         print("Chinese font (NotoSansSC) loaded successfully")
     else
         print("Warning: Chinese font failed to load. Error: " .. tostring(chineseFontOrError))
-        print("Chinese text may not display correctly.")
         self.chineseFont = love.graphics.newFont(16)
     end
     
-    -- Set default font
-    self.unicodeFont = self.arabicFont
-    
-    -- Try to create a fallback font that includes Unicode ranges
-    local fallbackSuccess, fallbackFont = pcall(function()
-        return love.graphics.newFont(16)
-    end)
-    
-    if fallbackSuccess then
-        self.fallbackFont = fallbackFont
-    end
+    -- Set default font (English can use any of them)
+    self.englishFont = love.graphics.newFont(16)
     
     love.graphics.setFont(self:getFont())
     print("Font initialization complete")
+    print("Current language: " .. self.currentLanguage)
 end
 
 -- Get the appropriate font for the current language
@@ -65,7 +67,7 @@ function Localization:getFont()
     elseif self.currentLanguage == "zh" then
         return self.chineseFont or love.graphics.getFont()
     else
-        return self.unicodeFont or love.graphics.getFont()
+        return self.englishFont or love.graphics.getFont()
     end
 end
 
@@ -370,6 +372,32 @@ Localization.strings = {
         en = "That item doesn't work here.",
         zh = "这个物品在这里不起作用。",
         ar = ".هذا العنصر لا يعمل هنا"
+    },
+    -- Item names
+    item_cannonball = {
+        en = "Cannonball",
+        zh = "炮弹",
+        ar = "كرة المدفع"
+    },
+    item_key = {
+        en = "Key",
+        zh = "钥匙",
+        ar = "مفتاح"
+    },
+    item_key_room1 = {
+        en = "Room 1 Key",
+        zh = "房间1钥匙",
+        ar = "مفتاح الغرفة 1"
+    },
+    item_key_room3 = {
+        en = "Room 3 Key",
+        zh = "房间3钥匙",
+        ar = "مفتاح الغرفة 3"
+    },
+    item_box = {
+        en = "Box",
+        zh = "箱子",
+        ar = "صندوق"
     },
 }
 

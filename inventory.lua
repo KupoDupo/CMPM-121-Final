@@ -1,6 +1,16 @@
 local Inventory = {}
 Inventory.__index = Inventory
 
+-- Load smaller fonts for inventory labels
+local smallArabicFont = nil
+local smallChineseFont = nil
+
+local success, font = pcall(love.graphics.newFont, "assets/fonts/NotoSansArabic-VariableFont_wdth,wght.ttf", 11)
+if success then smallArabicFont = font end
+
+success, font = pcall(love.graphics.newFont, "assets/fonts/NotoSansSC-VariableFont_wght.ttf", 11)
+if success then smallChineseFont = font end
+
 function Inventory.new()
     local self = setmetatable({}, Inventory)
     self.items = {}
@@ -45,6 +55,26 @@ end
 
 function Inventory:hasItem(itemName)
     return self.items[itemName] ~= nil
+end
+
+function Inventory:getItemDisplayName(itemName)
+    -- Try to get translated name based on item type
+    if itemName == "cannonball" then
+        return _G.localization:get("item_cannonball")
+    elseif itemName == "Key" then
+        return _G.localization:get("item_key")
+    elseif itemName == "Key_room1" then
+        return _G.localization:get("item_key_room1")
+    elseif itemName == "Key_room3" then
+        return _G.localization:get("item_key_room3")
+    elseif itemName:match("^box%d+$") then
+        -- For boxes, get the number and add it to the translation
+        local boxNum = itemName:match("%d+")
+        return _G.localization:get("item_box") .. " " .. boxNum
+    else
+        -- Fallback to the stored display name
+        return self.items[itemName] and self.items[itemName].displayName or itemName
+    end
 end
 
 function Inventory:toggle()
@@ -107,7 +137,12 @@ function Inventory:draw(mouseX, mouseY)
         love.graphics.setColor(0.2, 0.2, 0.3, 0.9)
         love.graphics.rectangle("fill", love.graphics.getWidth() - 110, 10, 100, 30, 5, 5)
         love.graphics.setColor(1, 1, 1)
-        love.graphics.print(_G.localization:get("inventory_hint"), love.graphics.getWidth() - 105, 17)
+        love.graphics.setFont(_G.localization:getFont())
+        -- Center the text vertically in the button (adjust for different font heights)
+        local font = love.graphics.getFont()
+        local textHeight = font:getHeight()
+        local yOffset = 10 + (30 - textHeight) / 2
+        love.graphics.print(_G.localization:get("inventory_hint"), love.graphics.getWidth() - 105, yOffset)
         
         -- Draw item count
         local itemCount = 0
@@ -140,6 +175,7 @@ function Inventory:draw(mouseX, mouseY)
     
     -- Title
     love.graphics.setColor(1, 1, 1)
+    love.graphics.setFont(_G.localization:getFont())
     love.graphics.print(_G.localization:get("inventory_title"), panelX + 10, panelY + 10)
     love.graphics.print(_G.localization:get("inventory_drag_hint"), panelX + 10, panelY + 30)
     love.graphics.print(_G.localization:get("inventory_close"), panelX + 10, panelY + panelH - 25)
@@ -178,7 +214,16 @@ function Inventory:draw(mouseX, mouseY)
             
             -- Item name
             love.graphics.setColor(1, 1, 1)
-            love.graphics.printf(itemData.displayName, x, y + slotSize - 15, slotSize, "center")
+            -- Use smaller font for Arabic/Chinese in inventory
+            if _G.localization.currentLanguage == "ar" and smallArabicFont then
+                love.graphics.setFont(smallArabicFont)
+            elseif _G.localization.currentLanguage == "zh" and smallChineseFont then
+                love.graphics.setFont(smallChineseFont)
+            else
+                love.graphics.setFont(_G.localization:getFont())
+            end
+            local displayName = self:getItemDisplayName(itemName)
+            love.graphics.printf(displayName, x, y + slotSize - 15, slotSize, "center")
         end
         index = index + 1
     end

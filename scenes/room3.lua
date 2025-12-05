@@ -209,6 +209,7 @@ function room3_scene:draw()
     love.graphics.setColor(1,1,1)
     
     -- Draw objectives
+    love.graphics.setFont(_G.localization:getFont())
     love.graphics.print(_G.localization:get("room3_title"), 10, 10)
     
     if door.disappeared then

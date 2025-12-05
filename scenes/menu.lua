@@ -22,6 +22,25 @@ local checkInterval = 0.5  -- Check every half second
 
 function menu_scene:load()
     titleFont = love.graphics.newFont(40)
+    titleFontArabic = nil
+    titleFontChinese = nil
+    buttonFontArabic = nil
+    buttonFontChinese = nil
+    
+    -- Try to load larger fonts for titles
+    local success, font = pcall(love.graphics.newFont, "assets/fonts/NotoSansArabic-VariableFont_wdth,wght.ttf", 40)
+    if success then titleFontArabic = font end
+    
+    success, font = pcall(love.graphics.newFont, "assets/fonts/NotoSansSC-VariableFont_wght.ttf", 40)
+    if success then titleFontChinese = font end
+    
+    -- Try to load smaller fonts for buttons (14pt)
+    success, font = pcall(love.graphics.newFont, "assets/fonts/NotoSansArabic-VariableFont_wdth,wght.ttf", 14)
+    if success then buttonFontArabic = font end
+    
+    success, font = pcall(love.graphics.newFont, "assets/fonts/NotoSansSC-VariableFont_wght.ttf", 14)
+    if success then buttonFontChinese = font end
+    
     buttons = {}
     languageButtons = {}
     lastCheckTime = 0  -- Force immediate check
@@ -175,7 +194,15 @@ function menu_scene:draw()
     local height = love.graphics.getHeight()
     
     love.graphics.setColor(1, 1, 1)
-    love.graphics.setFont(titleFont)
+    
+    -- Set appropriate title font based on language
+    if _G.localization.currentLanguage == "ar" and titleFontArabic then
+        love.graphics.setFont(titleFontArabic)
+    elseif _G.localization.currentLanguage == "zh" and titleFontChinese then
+        love.graphics.setFont(titleFontChinese)
+    else
+        love.graphics.setFont(titleFont)
+    end
     
     -- Draw title with RTL support
     local titleText = _G.localization:get("menu_title")
@@ -183,11 +210,10 @@ function menu_scene:draw()
     
     -- Draw language selection label
     love.graphics.setColor(1, 1, 1)
-    love.graphics.setNewFont(16)
+    love.graphics.setFont(_G.localization:getFont())
     love.graphics.print(_G.localization:get("menu_language") .. ":", width - 160, 10)
     
     -- Draw language buttons with updated positions
-    love.graphics.setNewFont(14)
     for i, btn in ipairs(languageButtons) do
         -- Update button positions based on current window size
         btn.x = width - 160
@@ -208,11 +234,24 @@ function menu_scene:draw()
         
         love.graphics.rectangle("fill", btn.x, btn.y, btn.width, btn.height)
         love.graphics.setColor(0, 0, 0)
+        
+        -- Set the appropriate font for each language button
+        if btn.text == "中文" or btn.text:match("[\228-\233]") then
+            -- Chinese characters - use smaller button font
+            love.graphics.setFont(buttonFontChinese or _G.localization.chineseFont or _G.localization:getFont())
+        elseif btn.text == "العربية" or btn.text:match("[\216-\219]") then
+            -- Arabic characters - use smaller button font
+            love.graphics.setFont(buttonFontArabic or _G.localization.arabicFont or _G.localization:getFont())
+        else
+            -- English or other
+            love.graphics.setFont(_G.localization:getFont())
+        end
+        
         love.graphics.printf(btn.text, btn.x, btn.y + 5, btn.width, "center")
     end
     
     -- Draw main menu buttons
-    love.graphics.setNewFont(14)
+    love.graphics.setFont(_G.localization:getFont())
     for _, btn in pairs(buttons) do
         if btn.isPressed then
             love.graphics.setColor(0.4, 0.4, 0.4) -- Pressed Color
@@ -229,7 +268,7 @@ function menu_scene:draw()
     
     -- Display save file location info
     love.graphics.setColor(0.7, 0.7, 0.7)
-    love.graphics.setNewFont(10)
+    love.graphics.setFont(_G.localization:getFont())
     local saveDir = love.filesystem.getSaveDirectory()
     love.graphics.print(_G.localization:get("save_location") .. saveDir, 10, height - 20)
 end
