@@ -24,13 +24,36 @@ local missCount = 0
 local gameOver = false
 local mouseWorldX, mouseWorldZ = 0, 0
 local isHoveringInteractive = false
+local nearForwardDoor = false  -- Track if player is near forward exit
 local interactionMessage = ""
 local messageTimer = 0
+local showTutorial = false
+local tutorialText = {
+    "Welcome to Escape the Haunted House!",
+    "",
+    "Controls:",
+    "- Point and click to move around",
+    "- Click objects to interact with them",
+    "- Drag items from your inventory",
+    "  to use them on objects",
+    "- Press S to manually save your game",
+    "- Press ESC to return to main menu",
+    "",
+    "The game also auto-saves regularly.",
+    "",
+    "Click anywhere to continue..."
+}
 
 function room1_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
 
     inventory = globalInventory  -- Use global inventory
+    
+    -- Check if tutorial should be shown
+    if _G.showTutorialPopup then
+        showTutorial = true
+        _G.showTutorialPopup = false  -- Clear the flag
+    end
     
     -- Restore player position from save or use default
     local startX, startY, startZ = 0, 0, 0
@@ -102,6 +125,11 @@ function room1_scene:load()
 end
 
 function room1_scene:update(dt)
+    -- Don't update game while tutorial is showing
+    if showTutorial then
+        return
+    end
+    
     if player then
         player:update(dt)
         
@@ -187,11 +215,14 @@ function room1_scene:update(dt)
             local doorRightX = door.x + 1.0
             -- If player crosses through the door opening
             if px >= doorLeftX and px <= doorRightX and pz < door.z - 1.0 then
-                -- Transition to room 2
-                print("Transitioning to Room 2!")
-                scenery.setScene("room2")
-                return
+                nearForwardDoor = true
+                interactionMessage = "Press E to go to Room 2"
+                messageTimer = 0.1
+            else
+                nearForwardDoor = false
             end
+        else
+            nearForwardDoor = false
         end
         
         -- Camera follows player (lower height to zoom in)
@@ -434,6 +465,27 @@ function room1_scene:draw()
         love.graphics.printf(interactionMessage, love.graphics.getWidth() / 2 - 145, 72, 290, "center")
     end
     
+    -- Draw door transition prompt (large and centered)
+    if nearForwardDoor then
+        local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+        local boxWidth, boxHeight = 400, 80
+        local boxX, boxY = w / 2 - boxWidth / 2, h / 2 - boxHeight / 2
+        
+        -- Background box with border
+        love.graphics.setColor(0.1, 0.1, 0.15, 0.95)
+        love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setColor(0.3, 0.8, 0.3, 1)
+        love.graphics.setLineWidth(4)
+        love.graphics.rectangle("line", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setLineWidth(1)
+        
+        -- Text
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.printf("[E] Go to Room 2", boxX, boxY + 20, boxWidth, "center")
+        love.graphics.setColor(0.7, 0.7, 0.7, 1)
+        love.graphics.printf("Press E to enter", boxX, boxY + 45, boxWidth, "center")
+    end
+    
     love.graphics.setColor(1, 1, 1)
     
     -- Objective display
@@ -490,10 +542,69 @@ function room1_scene:draw()
     else
         love.graphics.print(_G.localization:get("obj_blast_door"), 10, 60)
     end
+    
+    -- Draw tutorial popup
+    if showTutorial then
+        local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+        
+        -- Semi-transparent overlay
+        love.graphics.setColor(0, 0, 0, 0.7)
+        love.graphics.rectangle("fill", 0, 0, w, h)
+        
+        -- Tutorial box
+        local boxWidth, boxHeight = 500, 300
+        local boxX, boxY = w / 2 - boxWidth / 2, h / 2 - boxHeight / 2
+        
+        -- Box background
+        love.graphics.setColor(0.15, 0.15, 0.2, 0.95)
+        love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        
+        -- Box border
+        love.graphics.setColor(0.3, 0.6, 0.8, 1)
+        love.graphics.setLineWidth(3)
+        love.graphics.rectangle("line", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setLineWidth(1)
+        
+        -- Draw tutorial text
+        love.graphics.setColor(1, 1, 1, 1)
+        local textY = boxY + 20
+        local lineHeight = 25
+        
+        for i, line in ipairs(tutorialText) do
+            if i == 1 then
+                -- Title in larger font
+                local originalFont = love.graphics.getFont()
+                local titleFont = love.graphics.newFont(20)
+                love.graphics.setFont(titleFont)
+                love.graphics.printf(line, boxX, textY, boxWidth, "center")
+                love.graphics.setFont(originalFont)
+                textY = textY + 35
+            elseif i == 3 then
+                -- "Controls:" header
+                love.graphics.setColor(0.3, 0.8, 1, 1)
+                love.graphics.printf(line, boxX + 20, textY, boxWidth - 40, "left")
+                love.graphics.setColor(1, 1, 1, 1)
+                textY = textY + lineHeight
+            elseif line == "" then
+                textY = textY + 10
+            else
+                love.graphics.printf(line, boxX + 20, textY, boxWidth - 40, "left")
+                textY = textY + lineHeight
+            end
+        end
+        
+        love.graphics.setColor(1, 1, 1)
+    end
 end
 
 -- [[ UPDATED MOUSE LOGIC ]]
 function room1_scene:mousepressed(mouseX, mouseY, button)
+    -- Close tutorial popup if showing
+    if showTutorial and button == 1 then
+        showTutorial = false
+        return
+    end
+    
     -- Check inventory first
     if inventory:mousepressed(mouseX, mouseY, button) then
         return
@@ -723,6 +834,26 @@ function room1_scene:mousereleased(mouseX, mouseY, button)
 end
 
 function room1_scene:keypressed(key)
+    if key == "escape" then
+        print("Returning to main menu...")
+        scenery.setScene("menu")
+        return true
+    elseif key == "s" then
+        local SaveManager = require("savemanager")
+        local player = _G.currentPlayer
+        if SaveManager.manualSave(1, "room1", player, globalInventory) then
+            _G.manualSaveNotification = "Game Manually Saved"
+            _G.manualSaveTimer = 2
+            print("Manual save successful")
+        end
+        return true
+    elseif key == "e" then
+        if nearForwardDoor then
+            print("Transitioning to Room 2!")
+            scenery.setScene("room2")
+            return true
+        end
+    end
     return inventory:keypressed(key)
 end
 

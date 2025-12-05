@@ -26,6 +26,10 @@ local autoSaveTimer = 0
 local isRestoringGame = false  -- Flag to prevent auto-save during restoration
 local saveIcon = nil  -- Will hold the save icon image
 
+-- Initialize global manual save notification variables
+_G.manualSaveNotification = ""
+_G.manualSaveTimer = 0
+
 -- Override scenery.setScene to track scene changes and trigger auto-save
 local originalSetScene = scenery.setScene
 function scenery.setScene(key, data)
@@ -89,6 +93,11 @@ function love.update(dt)
         autoSaveTimer = autoSaveTimer - dt
     end
     
+    -- Update manual save notification timer
+    if _G.manualSaveTimer > 0 then
+        _G.manualSaveTimer = _G.manualSaveTimer - dt
+    end
+    
     -- Periodic auto-save (only in gameplay scenes)
     if currentSceneName ~= "menu" and currentSceneName ~= "ending" then
         local player = _G.currentPlayer
@@ -105,6 +114,43 @@ function love.draw()
     -- Call scenery draw for current scene
     scenery:draw()
     
+    -- Draw manual save notification with icon on top of everything
+    if _G.manualSaveTimer > 0 and saveIcon then
+        local alpha = math.min(1, _G.manualSaveTimer)
+        local iconSize = 32  -- Size of the icon
+        local padding = 10
+        local textWidth = love.graphics.getFont():getWidth(_G.manualSaveNotification)
+        local boxWidth = iconSize + textWidth + padding * 3
+        local boxHeight = iconSize + padding * 2
+        
+        local x = love.graphics.getWidth() - boxWidth - 15
+        local y = love.graphics.getHeight() - boxHeight - 15
+        
+        -- Background box
+        love.graphics.setColor(0.2, 0.2, 0.2, 0.9 * alpha)
+        love.graphics.rectangle("fill", x, y, boxWidth, boxHeight, 5, 5)
+        
+        -- Border (blue for manual save)
+        love.graphics.setColor(0.2, 0.5, 1, alpha)
+        love.graphics.setLineWidth(2)
+        love.graphics.rectangle("line", x, y, boxWidth, boxHeight, 5, 5)
+        
+        -- Draw save icon image
+        love.graphics.setColor(1, 1, 1, alpha)
+        local iconX = x + padding
+        local iconY = y + padding
+        local scaleX = iconSize / saveIcon:getWidth()
+        local scaleY = iconSize / saveIcon:getHeight()
+        love.graphics.draw(saveIcon, iconX, iconY, 0, scaleX, scaleY)
+        
+        -- Text
+        love.graphics.setColor(0.2, 0.5, 1, alpha)
+        love.graphics.print(_G.manualSaveNotification, iconX + iconSize + padding, y + (boxHeight - love.graphics.getFont():getHeight()) / 2)
+        
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.setLineWidth(1)
+    end
+    
     -- Draw auto-save notification with icon on top of everything
     if autoSaveTimer > 0 and saveIcon then
         love.graphics.setFont(_G.localization:getFont())
@@ -115,8 +161,11 @@ function love.draw()
         local boxWidth = iconSize + textWidth + padding * 3
         local boxHeight = iconSize + padding * 2
         
+        -- Offset Y position if manual save is also showing
+        local yOffset = (_G.manualSaveTimer > 0) and (iconSize + padding * 2 + 10) or 0
+        
         local x = love.graphics.getWidth() - boxWidth - 15
-        local y = love.graphics.getHeight() - boxHeight - 15
+        local y = love.graphics.getHeight() - boxHeight - 15 - yOffset
         
         -- Background box
         love.graphics.setColor(0.2, 0.2, 0.2, 0.9 * alpha)

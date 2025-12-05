@@ -28,11 +28,18 @@ local blocks = {}
 local pressurePlates = {}
 local bridge = { extended = false }
 local door = { x = 0, z = -9, locked = true }
+local backDoor = { x = 0, z = 9 }  -- Door to go back to Room 1
+local backDoor_object
+local teleportCooldown = 0  -- Prevent immediate re-teleportation
+local nearForwardDoor = false  -- Track if player is near forward exit
+local nearBackDoor = false  -- Track if player is near back exit
 local initialBlockPositions = {}
 local placedBoxes = {}  -- Boxes placed on pressure plates from inventory
 
 function room2_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.15, 0.2)
+    
+    teleportCooldown = 1.0  -- 1 second cooldown after entering room
 
     inventory = globalInventory  -- Use global inventory
     
@@ -51,6 +58,7 @@ function room2_scene:load()
     gap_object = dream:loadObject("assets/cube")
     bridge_object = dream:loadObject("assets/cube")
     door_object = dream:loadObject("assets/cube")
+    backDoor_object = dream:loadObject("assets/cube")
     key_object = dream:loadObject("assets/key")
     
     -- Create 3 pressure plates in front of the gap
@@ -125,6 +133,11 @@ function room2_scene:load()
 end
 
 function room2_scene:update(dt)
+    -- Update teleport cooldown
+    if teleportCooldown > 0 then
+        teleportCooldown = teleportCooldown - dt
+    end
+    
     if player then
         player:update(dt)
         
@@ -272,14 +285,32 @@ function room2_scene:update(dt)
         dream.camera:translate(0, 8, 0)
         dream.camera:rotateX(-math.pi / 2)
     end
-    if bridge.extended then
+    if bridge.extended and teleportCooldown <= 0 then
       local px, pz = player:getX(), player:getZ()
       -- Define exit zone at far end of bridge
       if px >= -2 and px <= 2 and pz <= door.z + 1 and not playerDead then
-        -- Transition to Room 3
-        print("Player reached the exit! Loading next scene...")
-        scenery.setScene("room3")-- Make sure your sceneManager has room3 loaded
+        nearForwardDoor = true
+        interactionMessage = "Press E to go to Room 3"
+        messageTimer = 0.1
+      else
+        nearForwardDoor = false
       end
+    else
+      nearForwardDoor = false
+    end
+    
+    -- Back door - return to Room 1
+    if teleportCooldown <= 0 then
+      local px, pz = player:getX(), player:getZ()
+      if px >= backDoor.x - 2 and px <= backDoor.x + 2 and pz >= backDoor.z - 1 then
+        nearBackDoor = true
+        interactionMessage = "Press E to return to Room 1"
+        messageTimer = 0.1
+      else
+        nearBackDoor = false
+      end
+    else
+      nearBackDoor = false
     end
   
     
@@ -489,6 +520,34 @@ function room2_scene:draw()
             door_object:scale(2, 3, 0.2)
             dream:draw(door_object)
         end
+        
+        -- Draw back door
+        if backDoor_object then
+            local backDoor_mat = dream:newMaterial()
+            backDoor_mat.color = {0.2, 0.5, 0.2, 1}  -- Green color to indicate exit
+            backDoor_mat.roughness = 0.4
+            backDoor_mat.cullMode = "none"
+            
+            local function paintRecursive(obj, material)
+                if obj.meshes then
+                    for _, mesh in pairs(obj.meshes) do
+                        mesh.material = material
+                    end
+                end
+                if obj.objects then
+                    for _, child in pairs(obj.objects) do
+                        paintRecursive(child, material)
+                    end
+                end
+            end
+            
+            paintRecursive(backDoor_object, backDoor_mat)
+            backDoor_object:resetTransform()
+            backDoor_object:translate(backDoor.x, 1.5, backDoor.z)
+            backDoor_object:scale(2.0, 3.0, 0.2)
+            dream:draw(backDoor_object)
+        end
+        
         if keySpawned and not key.collected then
           local mat = dream:newMaterial()
           mat.color = {1, 1, 0.2, 1}
@@ -528,6 +587,45 @@ end
         love.graphics.rectangle("fill", love.graphics.getWidth() / 2 - 150, 60, 300, 40, 5, 5)
         love.graphics.setColor(1, 1, 1, math.min(1, messageTimer))
         love.graphics.printf(interactionMessage, love.graphics.getWidth() / 2 - 145, 72, 290, "center")
+    end
+    
+    -- Draw door transition prompts (large and centered)
+    if nearForwardDoor then
+        local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+        local boxWidth, boxHeight = 400, 80
+        local boxX, boxY = w / 2 - boxWidth / 2, h / 2 - boxHeight / 2
+        
+        -- Background box with border
+        love.graphics.setColor(0.1, 0.1, 0.15, 0.95)
+        love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setColor(0.3, 0.8, 0.3, 1)
+        love.graphics.setLineWidth(4)
+        love.graphics.rectangle("line", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setLineWidth(1)
+        
+        -- Text
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.printf("[E] Go to Room 3", boxX, boxY + 20, boxWidth, "center")
+        love.graphics.setColor(0.7, 0.7, 0.7, 1)
+        love.graphics.printf("Press E to enter", boxX, boxY + 45, boxWidth, "center")
+    elseif nearBackDoor then
+        local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+        local boxWidth, boxHeight = 400, 80
+        local boxX, boxY = w / 2 - boxWidth / 2, h / 2 - boxHeight / 2
+        
+        -- Background box with border (different color for back door)
+        love.graphics.setColor(0.1, 0.1, 0.15, 0.95)
+        love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setColor(0.8, 0.6, 0.3, 1)
+        love.graphics.setLineWidth(4)
+        love.graphics.rectangle("line", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setLineWidth(1)
+        
+        -- Text
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.printf("[E] Return to Room 1", boxX, boxY + 20, boxWidth, "center")
+        love.graphics.setColor(0.7, 0.7, 0.7, 1)
+        love.graphics.printf("Press E to go back", boxX, boxY + 45, boxWidth, "center")
     end
     
     -- Draw custom cursor if hovering over block
@@ -741,6 +839,34 @@ function room2_scene:mousereleased(mouseX, mouseY, button)
 end
 
 function room2_scene:keypressed(key)
+    if key == "escape" then
+        print("Returning to main menu...")
+        scenery.setScene("menu")
+        return true
+    elseif key == "s" then
+        local SaveManager = require("savemanager")
+        local player = _G.currentPlayer
+        if SaveManager.manualSave(1, "room2", player, globalInventory) then
+            _G.manualSaveNotification = "Game Manually Saved"
+            _G.manualSaveTimer = 2
+            print("Manual save successful")
+        end
+        return true
+    elseif key == "e" then
+        if nearForwardDoor then
+            print("Player reached the exit! Loading next scene...")
+            _G.savedPlayerPosition = { x = 0, y = 0, z = 6 }  -- Spawn near back of room 3
+            _G.previousRoom = "room2"  -- Track where we came from
+            scenery.setScene("room3")
+            return true
+        elseif nearBackDoor then
+            print("Returning to Room 1...")
+            _G.savedPlayerPosition = { x = 0, y = 0, z = -4 }  -- Spawn near forward door in room 1
+            _G.previousRoom = "room2"  -- Track where we came from
+            scenery.setScene("room1")
+            return true
+        end
+    end
     return inventory:keypressed(key)
 end
 

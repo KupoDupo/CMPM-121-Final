@@ -177,6 +177,9 @@ function menu_scene:rebuildButtons()
         _G.savedPlayerPosition = nil
         globalInventory:clear()
         
+        -- Set flag to show tutorial popup
+        _G.showTutorialPopup = true
+        
         scenery.setScene("room1") 
         print("Starting new game!") 
     end))
