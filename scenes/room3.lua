@@ -17,11 +17,17 @@ local interactionMessage = ""
 local messageTimer = 0
 
 -- Puzzle state
--- One key is carried over from Room 2 (inventory item name: "Key").
--- The second key is local to Room 3 and will be added to inventory as "Key_room3".
+-- Three keys total: Key_room1, Key_room2, Key_room3
 local key_local = { x = 2, z = 2, collected = false }
 
+-- Door with lock tracking
 door = { x = 0, z = -6, locked = true, disappeared = false }
+local locksRemaining = 3  -- Three locks on the door
+local keysUsedOnDoor = {
+    Key_room1 = false,
+    Key_room2 = false,
+    Key_room3 = false
+}
 
 function room3_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
@@ -52,6 +58,12 @@ function room3_scene:load()
         key_local.collected = state.keyCollected
         door.locked = not state.doorUnlocked
         door.disappeared = state.doorUnlocked
+        if state.keysUsedOnDoor then
+            keysUsedOnDoor = state.keysUsedOnDoor
+        end
+        if state.locksRemaining then
+            locksRemaining = state.locksRemaining
+        end
         _G.room3State = nil
     end
 end
@@ -63,7 +75,9 @@ function room3_scene:update(dt)
         -- Capture current state for save system
         _G.room3State = {
             keyCollected = key_local.collected,
-            doorUnlocked = door.disappeared
+            doorUnlocked = door.disappeared,
+            keysUsedOnDoor = keysUsedOnDoor,
+            locksRemaining = locksRemaining
         }
 
         if messageTimer > 0 then
@@ -82,9 +96,8 @@ function room3_scene:update(dt)
             end
         end
 
-        -- Unlock door only when player has the key from Room 2 ("Key")
-        -- and the local Room 3 key ("Key_room3").
-        if inventory:hasItem("Key") and inventory:hasItem("Key_room3") then
+        -- Check if all locks have been removed
+        if locksRemaining == 0 then
             door.locked = false
             door.disappeared = true
         end
@@ -198,12 +211,67 @@ function room3_scene:draw()
     local mx,my = love.mouse.getPosition()
     inventory:draw(mx,my)
 
+    -- Draw lock squares on the door (convert world coordinates to screen)
+    if not door.disappeared then
+        local w, h = love.graphics.getDimensions()
+        -- Door is at world position (door.x, door.z)
+        -- Convert to screen coordinates using the same math as mouse input
+        local doorScreenX = (door.x / 9 + 1) * w / 2
+        local doorScreenY = (door.z / 9 + 1) * h / 2
+        
+        local lockSize = 25
+        local lockSpacing = 8
+        local totalWidth = 3 * lockSize + 2 * lockSpacing
+        local startX = doorScreenX - totalWidth / 2
+        local startY = doorScreenY - lockSize / 2
+        
+        for i = 1, 3 do
+            local lockX = startX + (i - 1) * (lockSize + lockSpacing)
+            local lockY = startY
+            
+            if i <= locksRemaining then
+                -- Draw filled lock square
+                love.graphics.setColor(0.6, 0.3, 0.1, 0.9)
+                love.graphics.rectangle("fill", lockX, lockY, lockSize, lockSize, 3, 3)
+                love.graphics.setColor(0.9, 0.7, 0.3)
+                love.graphics.setLineWidth(3)
+                love.graphics.rectangle("line", lockX, lockY, lockSize, lockSize, 3, 3)
+                love.graphics.setLineWidth(1)
+            else
+                -- Draw empty/removed lock
+                love.graphics.setColor(0.2, 0.2, 0.2, 0.4)
+                love.graphics.rectangle("fill", lockX, lockY, lockSize, lockSize, 3, 3)
+                love.graphics.setColor(0.4, 0.4, 0.4, 0.6)
+                love.graphics.setLineWidth(2)
+                love.graphics.rectangle("line", lockX, lockY, lockSize, lockSize, 3, 3)
+                love.graphics.setLineWidth(1)
+            end
+        end
+    end
+    
+    -- Draw objective text
+    love.graphics.setColor(1, 1, 1)
+    local hasRoom1Key = inventory:hasItem("Key_room1")
+    local hasRoom2Key = inventory:hasItem("Key_room2")
+    local hasRoom3Key = inventory:hasItem("Key_room3")
+    local totalKeys = (hasRoom1Key and 1 or 0) + (hasRoom2Key and 1 or 0) + (hasRoom3Key and 1 or 0)
+    
+    if door.disappeared then
+        love.graphics.print("Objective: Exit through the door!", 10, 80)
+    elseif totalKeys == 3 then
+        love.graphics.print("Objective: Use keys on door", 10, 80)
+        love.graphics.setColor(0.8, 0.8, 0)
+        love.graphics.print("(Open inventory and drag keys to the door)", 10, 100)
+    elseif totalKeys < 3 then
+        love.graphics.print("Objective: Collect all keys (" .. totalKeys .. "/3)", 10, 80)
+    end
+
     -- Draw interaction messages
     if messageTimer>0 then
         love.graphics.setColor(0.2,0.8,0.2,math.min(1,messageTimer))
-        love.graphics.rectangle("fill", love.graphics.getWidth()/2-150,60,300,40,5,5)
+        love.graphics.rectangle("fill", love.graphics.getWidth()/2-150,130,300,40,5,5)
         love.graphics.setColor(1,1,1,math.min(1,messageTimer))
-        love.graphics.printf(interactionMessage, love.graphics.getWidth()/2-145,72,290,"center")
+        love.graphics.printf(interactionMessage, love.graphics.getWidth()/2-145,142,290,"center")
     end
 
     love.graphics.setColor(1,1,1)
@@ -275,6 +343,51 @@ function room3_scene:mousereleased(mx,my,button)
     local droppedItem = inventory:mousereleased(mx,my,button)
     
     if droppedItem then
+        -- Check if it's a key being used on the door
+        if (droppedItem == "Key_room1" or droppedItem == "Key_room2" or droppedItem == "Key_room3") and not door.disappeared then
+            -- Check if this key hasn't been used yet
+            if not keysUsedOnDoor[droppedItem] then
+                -- Convert mouse to world coordinates to check if near door
+                local w,h = love.graphics.getDimensions()
+                local nx = (mx/w)*2 - 1
+                local nz = (my/h)*2 - 1
+                local dropX, dropZ = nx*9, nz*9
+                
+                -- Check if dropped near the door (within reasonable range)
+                local distToDoor = math.sqrt((dropX - door.x)^2 + (dropZ - door.z)^2)
+                
+                if distToDoor < 3.0 then
+                    -- Use the key on the door
+                    keysUsedOnDoor[droppedItem] = true
+                    locksRemaining = locksRemaining - 1
+                    inventory:removeItem(droppedItem)
+                    
+                    local keyNames = {
+                        Key_room1 = "Room 1 Key",
+                        Key_room2 = "Room 2 Key",
+                        Key_room3 = "Room 3 Key"
+                    }
+                    
+                    interactionMessage = "Used " .. keyNames[droppedItem] .. " on door! (" .. locksRemaining .. " locks remaining)"
+                    messageTimer = 3
+                    
+                    -- Check if all locks are removed
+                    if locksRemaining == 0 then
+                        door.locked = false
+                        door.disappeared = true
+                        interactionMessage = "All locks removed! The door is open!"
+                        messageTimer = 3
+                    end
+                else
+                    interactionMessage = "Too far from the door!"
+                    messageTimer = 2
+                end
+            else
+                interactionMessage = "Already used this key on the door!"
+                messageTimer = 2
+            end
+        end
+        
         -- Close inventory after any interaction attempt
         inventory:close()
     end

@@ -23,10 +23,16 @@ function Inventory.new()
 end
 
 function Inventory:addItem(itemName, displayName)
+    -- Handle backward compatibility for old save files
+    if itemName == "room 2 key" or itemName == "Room 2 key" then
+        itemName = "Key_room2"
+        displayName = "Room 2 Key"  -- Always use correct capitalization
+    end
+    
     if not self.items[itemName] then
         local icon = nil
         -- Keys use key.png
-        if itemName == "Key" or itemName == "Key_room3" or itemName == "Key_room1" then
+        if itemName == "Key" or itemName == "Key_room3" or itemName == "Key_room1" or itemName == "Key_room2" then
             icon = love.graphics.newImage("assets/key.png")
         -- Boxes use crate.jpg
         elseif itemName:match("^box%d+$") then

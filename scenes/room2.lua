@@ -20,7 +20,7 @@ local messageTimer = 0
 local playerDead = false
 local deathTimer = 0
 local key_object
-local key = { x = 5, z = 5, collected = false}
+local key = { x = 0, z = -7, collected = false}
 local keySpawned = false
 
 -- Puzzle state
@@ -160,8 +160,8 @@ function room2_scene:update(dt)
         
         -- Check if player fell into gap
         local px, pz = player:getX(), player:getZ()
-        local inGapX = px >= -3 and px <= 3
-        local inGapZ = pz >= -4 and pz <= -1
+        local inGapX = px >= -2.5 and px <= 2.5
+        local inGapZ = pz >= -3.5 and pz <= -1.5
         
         if inGapX and inGapZ and not bridge.extended then
             -- Player fell into the gap!
@@ -195,12 +195,32 @@ function room2_scene:update(dt)
             local dz = player:getZ() - placedBox.z
             local distToBox = math.sqrt(dx*dx + dz*dz)
             if distToBox < 1.0 then
-                -- Re-add the box with its original ID
-                local boxId = placedBox.id
-                table.remove(placedBoxes, i)
-                inventory:addItem("box" .. boxId, "Box " .. boxId)
-                interactionMessage = "Box " .. boxId .. " collected!"
-                messageTimer = 2
+                -- Check if this box is on an activated pressure plate
+                local onActivatedPlate = false
+                for _, plate in ipairs(pressurePlates) do
+                    if plate.activated then
+                        local pdx = placedBox.x - plate.x
+                        local pdz = placedBox.z - plate.z
+                        local pdist = math.sqrt(pdx*pdx + pdz*pdz)
+                        if pdist < 0.8 then
+                            onActivatedPlate = true
+                            break
+                        end
+                    end
+                end
+                
+                -- Only allow pickup if not on an activated plate
+                if not onActivatedPlate then
+                    -- Re-add the box with its original ID
+                    local boxId = placedBox.id
+                    table.remove(placedBoxes, i)
+                    inventory:addItem("box" .. boxId, "Box " .. boxId)
+                    interactionMessage = "Box " .. boxId .. " collected!"
+                    messageTimer = 2
+                else
+                    interactionMessage = "Can't move box from activated plate!"
+                    messageTimer = 2
+                end
             end
         end
         
@@ -242,7 +262,7 @@ function room2_scene:update(dt)
           local dz = player:getZ() - key.z
           if math.sqrt(dx*dx + dz*dz) < 1.2 then
             key.collected = true
-            inventory:addItem("Key")   -- Or whatever your inventory uses
+            inventory:addItem("Key_room2", "Room 2 Key")
             interactionMessage = _G.localization:get("picked_up_key")
             messageTimer = 3
           end
@@ -641,6 +661,19 @@ function room2_scene:mousepressed(mouseX, mouseY, button)
                 player:walkTo(placedBox.x, placedBox.z)
                 return
             end
+        end
+        
+        -- Check if target is in or near the gap (black area) and bridge is not extended
+        -- Add buffer zone around gap to create invisible walls
+        local gapBuffer = 0.5
+        local inGapX = targetX >= (-3 - gapBuffer) and targetX <= (3 + gapBuffer)
+        local inGapZ = targetZ >= (-4 - gapBuffer) and targetZ <= (-1 + gapBuffer)
+        
+        if inGapX and inGapZ and not bridge.extended then
+            -- Don't allow walking into or near the gap
+            interactionMessage = "Can't walk there!"
+            messageTimer = 1
+            return
         end
         
         -- Otherwise, move player
