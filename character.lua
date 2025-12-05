@@ -12,7 +12,9 @@ function character.new(name, startX, startY, startZ)
     local isMoving = false
     local stopThreshold = 0.08 -- when closer than this, snap to target
     local decelDistance = 0.8  -- start slowing down within this distance
-    local shadow = dream:loadObject("assets/cube") -- shadow 
+    
+    -- Use cannon-ball for a round shadow
+    local shadow = dream:loadObject("assets/cannon-ball") 
 
     -- Load player model
     local object = dream:loadObject("assets/player")
@@ -47,9 +49,9 @@ function character.new(name, startX, startY, startZ)
     
     paintRecursive(object, mat)
     
-    -- Apply Shadow
+    -- Apply Shadow with high translucency
     local shadowMat = dream:newMaterial()
-    shadowMat.color = {0, 0, 0, 0.10} 
+    shadowMat.color = {0, 0, 0, 0.15} 
     shadowMat.roughness = 1.0 
     shadowMat.metallic = 0.0
     shadowMat.cullMode = "none"
@@ -113,11 +115,10 @@ function character.new(name, startX, startY, startZ)
     end
 
     function self:draw()
-      -- Draw Shadow
+      -- Draw Shadow (round and flat)
       shadow:resetTransform()
       shadow:translate(x, y, z)
-      shadow:rotateY(math.rad(45))
-      shadow:scale(1.3, 0.03, 1.3)
+      shadow:scale(1.5, 0.05, 1.5)  -- larger and very flat to look like a round shadow
       dream:draw(shadow)
         
       -- Draw Player
