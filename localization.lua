@@ -171,7 +171,7 @@ Localization.strings = {
         ar = "!تم تدمير الباب! توجه عبر الفتحة"
     },
     load_hint = {
-        en = "(Walk near the cannon or drag from inventory)",
+        en = "(Drag the cannonball from inventory to the cannon)",
         zh = "（走近大炮或从物品栏拖动）",
         ar = "(امش بالقرب من المدفع أو اسحب من المخزون)"
     },
