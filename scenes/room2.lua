@@ -195,12 +195,32 @@ function room2_scene:update(dt)
             local dz = player:getZ() - placedBox.z
             local distToBox = math.sqrt(dx*dx + dz*dz)
             if distToBox < 1.0 then
-                -- Re-add the box with its original ID
-                local boxId = placedBox.id
-                table.remove(placedBoxes, i)
-                inventory:addItem("box" .. boxId, "Box " .. boxId)
-                interactionMessage = "Box " .. boxId .. " collected!"
-                messageTimer = 2
+                -- Check if this box is on an activated pressure plate
+                local onActivatedPlate = false
+                for _, plate in ipairs(pressurePlates) do
+                    if plate.activated then
+                        local pdx = placedBox.x - plate.x
+                        local pdz = placedBox.z - plate.z
+                        local pdist = math.sqrt(pdx*pdx + pdz*pdz)
+                        if pdist < 0.8 then
+                            onActivatedPlate = true
+                            break
+                        end
+                    end
+                end
+                
+                -- Only allow pickup if not on an activated plate
+                if not onActivatedPlate then
+                    -- Re-add the box with its original ID
+                    local boxId = placedBox.id
+                    table.remove(placedBoxes, i)
+                    inventory:addItem("box" .. boxId, "Box " .. boxId)
+                    interactionMessage = "Box " .. boxId .. " collected!"
+                    messageTimer = 2
+                else
+                    interactionMessage = "Can't move box from activated plate!"
+                    messageTimer = 2
+                end
             end
         end
         
