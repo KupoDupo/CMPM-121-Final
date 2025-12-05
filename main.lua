@@ -116,6 +116,7 @@ function love.draw()
     
     -- Draw manual save notification with icon on top of everything
     if _G.manualSaveTimer > 0 and saveIcon then
+        love.graphics.setFont(_G.localization:getFont())
         local alpha = math.min(1, _G.manualSaveTimer)
         local iconSize = 32  -- Size of the icon
         local padding = 10

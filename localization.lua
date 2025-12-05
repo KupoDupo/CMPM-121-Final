@@ -112,6 +112,65 @@ Localization.strings = {
         ar = "تم حفظ اللعبة تلقائيًا"
     },
     
+    -- Manual save notification
+    manual_save_notification = {
+        en = "Game Manually Saved",
+        zh = "游戏已手动保存",
+        ar = "تم حفظ اللعبة يدويًا"
+    },
+    
+    -- Tutorial popup text
+    tutorial_welcome = {
+        en = "Welcome to Escape the Haunted House!",
+        zh = "欢迎来到逃离鬼屋！",
+        ar = "!مرحبًا بك في الهروب من البيت المسكون"
+    },
+    tutorial_controls = {
+        en = "Controls:",
+        zh = "控制：",
+        ar = ":التحكم"
+    },
+    tutorial_move = {
+        en = "- Point and click to move around",
+        zh = "- 点击移动",
+        ar = "انقر للتحرك -"
+    },
+    tutorial_interact = {
+        en = "- Click objects to interact with them",
+        zh = "- 点击物体进行互动",
+        ar = "انقر على الأشياء للتفاعل معها -"
+    },
+    tutorial_drag = {
+        en = "- Drag items from your inventory",
+        zh = "- 从物品栏拖动物品",
+        ar = "اسحب العناصر من المخزون الخاص بك -"
+    },
+    tutorial_use = {
+        en = "  to use them on objects",
+        zh = "  来使用它们",
+        ar = "  لاستخدامها على الأشياء"
+    },
+    tutorial_manual_save = {
+        en = "- Press S to manually save your game",
+        zh = "- 按 S 手动保存游戏",
+        ar = "S اضغط على لحفظ اللعبة يدويًا -"
+    },
+    tutorial_esc = {
+        en = "- Press ESC to return to main menu",
+        zh = "- 按 ESC 返回主菜单",
+        ar = "ESC اضغط على للعودة إلى القائمة الرئيسية -"
+    },
+    tutorial_autosave = {
+        en = "The game also auto-saves regularly.",
+        zh = "游戏也会定期自动保存。",
+        ar = ".تحفظ اللعبة أيضًا تلقائيًا بانتظام"
+    },
+    tutorial_continue = {
+        en = "Click anywhere to continue...",
+        zh = "点击任意位置继续...",
+        ar = "...انقر في أي مكان للمتابعة"
+    },
+    
     -- Inventory strings
     inventory_title = {
         en = "INVENTORY",

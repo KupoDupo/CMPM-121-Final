@@ -494,7 +494,7 @@ function room3_scene:keypressed(key)
         local SaveManager = require("savemanager")
         local player = _G.currentPlayer
         if SaveManager.manualSave(1, "room3", player, globalInventory) then
-            _G.manualSaveNotification = "Game Manually Saved"
+            _G.manualSaveNotification = _G.localization:get("manual_save_notification")
             _G.manualSaveTimer = 2
             print("Manual save successful")
         end

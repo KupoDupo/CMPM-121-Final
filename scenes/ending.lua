@@ -251,7 +251,7 @@ end
 
 function ending_scene:keypressed(key)
     -- Check for restart or return to menu
-    if key == "r" or key == "escape" then
+    if key == "escape" then
         -- Reset global inventory
         globalInventory:clear()
         -- Return to menu

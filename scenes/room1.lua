@@ -28,21 +28,25 @@ local nearForwardDoor = false  -- Track if player is near forward exit
 local interactionMessage = ""
 local messageTimer = 0
 local showTutorial = false
-local tutorialText = {
-    "Welcome to Escape the Haunted House!",
-    "",
-    "Controls:",
-    "- Point and click to move around",
-    "- Click objects to interact with them",
-    "- Drag items from your inventory",
-    "  to use them on objects",
-    "- Press S to manually save your game",
-    "- Press ESC to return to main menu",
-    "",
-    "The game also auto-saves regularly.",
-    "",
-    "Click anywhere to continue..."
-}
+local tutorialText = {}  -- Will be populated from localization
+
+function getTutorialText()
+    return {
+        _G.localization:get("tutorial_welcome"),
+        "",
+        _G.localization:get("tutorial_controls"),
+        _G.localization:get("tutorial_move"),
+        _G.localization:get("tutorial_interact"),
+        _G.localization:get("tutorial_drag"),
+        _G.localization:get("tutorial_use"),
+        _G.localization:get("tutorial_manual_save"),
+        _G.localization:get("tutorial_esc"),
+        "",
+        _G.localization:get("tutorial_autosave"),
+        "",
+        _G.localization:get("tutorial_continue")
+    }
+end
 
 function room1_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
@@ -52,6 +56,7 @@ function room1_scene:load()
     -- Check if tutorial should be shown
     if _G.showTutorialPopup then
         showTutorial = true
+        tutorialText = getTutorialText()  -- Load tutorial text from localization
         _G.showTutorialPopup = false  -- Clear the flag
     end
     
@@ -551,8 +556,8 @@ function room1_scene:draw()
         love.graphics.setColor(0, 0, 0, 0.7)
         love.graphics.rectangle("fill", 0, 0, w, h)
         
-        -- Tutorial box
-        local boxWidth, boxHeight = 500, 300
+        -- Tutorial box (larger to accommodate all languages)
+        local boxWidth, boxHeight = 600, 380
         local boxX, boxY = w / 2 - boxWidth / 2, h / 2 - boxHeight / 2
         
         -- Box background
@@ -572,15 +577,25 @@ function room1_scene:draw()
         
         for i, line in ipairs(tutorialText) do
             if i == 1 then
-                -- Title in larger font
-                local originalFont = love.graphics.getFont()
-                local titleFont = love.graphics.newFont(20)
+                -- Title in larger font (use language-specific title fonts from menu if available)
+                local titleFont
+                if _G.localization.currentLanguage == "ar" then
+                    -- Load Arabic title font if not already loaded
+                    local success, font = pcall(love.graphics.newFont, "assets/fonts/NotoSansArabic-VariableFont_wdth,wght.ttf", 20)
+                    titleFont = success and font or _G.localization:getFont()
+                elseif _G.localization.currentLanguage == "zh" then
+                    -- Load Chinese title font if not already loaded
+                    local success, font = pcall(love.graphics.newFont, "assets/fonts/NotoSansSC-VariableFont_wght.ttf", 20)
+                    titleFont = success and font or _G.localization:getFont()
+                else
+                    titleFont = love.graphics.newFont(20)
+                end
                 love.graphics.setFont(titleFont)
                 love.graphics.printf(line, boxX, textY, boxWidth, "center")
-                love.graphics.setFont(originalFont)
                 textY = textY + 35
             elseif i == 3 then
                 -- "Controls:" header
+                love.graphics.setFont(_G.localization:getFont())
                 love.graphics.setColor(0.3, 0.8, 1, 1)
                 love.graphics.printf(line, boxX + 20, textY, boxWidth - 40, "left")
                 love.graphics.setColor(1, 1, 1, 1)
@@ -588,6 +603,7 @@ function room1_scene:draw()
             elseif line == "" then
                 textY = textY + 10
             else
+                love.graphics.setFont(_G.localization:getFont())
                 love.graphics.printf(line, boxX + 20, textY, boxWidth - 40, "left")
                 textY = textY + lineHeight
             end
@@ -842,7 +858,7 @@ function room1_scene:keypressed(key)
         local SaveManager = require("savemanager")
         local player = _G.currentPlayer
         if SaveManager.manualSave(1, "room1", player, globalInventory) then
-            _G.manualSaveNotification = "Game Manually Saved"
+            _G.manualSaveNotification = _G.localization:get("manual_save_notification")
             _G.manualSaveTimer = 2
             print("Manual save successful")
         end
