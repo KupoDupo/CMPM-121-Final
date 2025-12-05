@@ -27,11 +27,29 @@ local isHoveringInteractive = false
 local nearForwardDoor = false  -- Track if player is near forward exit
 local interactionMessage = ""
 local messageTimer = 0
+local showTutorial = false
+local tutorialText = {
+    "Welcome to Escape the Haunted House!",
+    "",
+    "Controls:",
+    "- Point and click to move around",
+    "- Click objects to interact with them",
+    "- Drag items from your inventory",
+    "  to use them on objects",
+    "",
+    "Click anywhere to continue..."
+}
 
 function room1_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
 
     inventory = globalInventory  -- Use global inventory
+    
+    -- Check if tutorial should be shown
+    if _G.showTutorialPopup then
+        showTutorial = true
+        _G.showTutorialPopup = false  -- Clear the flag
+    end
     
     -- Restore player position from save or use default
     local startX, startY, startZ = 0, 0, 0
@@ -103,6 +121,11 @@ function room1_scene:load()
 end
 
 function room1_scene:update(dt)
+    -- Don't update game while tutorial is showing
+    if showTutorial then
+        return
+    end
+    
     if player then
         player:update(dt)
         
@@ -514,10 +537,68 @@ function room1_scene:draw()
     else
         love.graphics.print("Objective: BLAST THE DOOR!", 10, 60)
     end
+    
+    -- Draw tutorial popup
+    if showTutorial then
+        local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+        
+        -- Semi-transparent overlay
+        love.graphics.setColor(0, 0, 0, 0.7)
+        love.graphics.rectangle("fill", 0, 0, w, h)
+        
+        -- Tutorial box
+        local boxWidth, boxHeight = 500, 300
+        local boxX, boxY = w / 2 - boxWidth / 2, h / 2 - boxHeight / 2
+        
+        -- Box background
+        love.graphics.setColor(0.15, 0.15, 0.2, 0.95)
+        love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        
+        -- Box border
+        love.graphics.setColor(0.3, 0.6, 0.8, 1)
+        love.graphics.setLineWidth(3)
+        love.graphics.rectangle("line", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setLineWidth(1)
+        
+        -- Draw tutorial text
+        love.graphics.setColor(1, 1, 1, 1)
+        local textY = boxY + 20
+        local lineHeight = 25
+        
+        for i, line in ipairs(tutorialText) do
+            if i == 1 then
+                -- Title in larger font
+                love.graphics.push()
+                love.graphics.setNewFont(20)
+                love.graphics.printf(line, boxX, textY, boxWidth, "center")
+                love.graphics.pop()
+                textY = textY + 35
+            elseif i == 3 then
+                -- "Controls:" header
+                love.graphics.setColor(0.3, 0.8, 1, 1)
+                love.graphics.printf(line, boxX + 20, textY, boxWidth - 40, "left")
+                love.graphics.setColor(1, 1, 1, 1)
+                textY = textY + lineHeight
+            elseif line == "" then
+                textY = textY + 10
+            else
+                love.graphics.printf(line, boxX + 20, textY, boxWidth - 40, "left")
+                textY = textY + lineHeight
+            end
+        end
+        
+        love.graphics.setColor(1, 1, 1)
+    end
 end
 
 -- [[ UPDATED MOUSE LOGIC ]]
 function room1_scene:mousepressed(mouseX, mouseY, button)
+    -- Close tutorial popup if showing
+    if showTutorial and button == 1 then
+        showTutorial = false
+        return
+    end
+    
     -- Check inventory first
     if inventory:mousepressed(mouseX, mouseY, button) then
         return
