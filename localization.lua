@@ -20,30 +20,42 @@ Localization.textDirection = {
 
 -- Initialize fonts with Unicode support
 function Localization:initFont()
-    -- Load Arabic font
-    local arabicSuccess, arabicFont = pcall(love.graphics.newFont, "assets/fonts/NotoSansArabic-VariableFont_wdth,wght.ttf", 14)
-    if arabicSuccess then
-        self.arabicFont = arabicFont
+    -- Try loading Arabic font with variable font support
+    local arabicSuccess, arabicFontOrError = pcall(love.graphics.newFont, "assets/fonts/KFGQPC Uthmanic Script HAFS Regular.otf", 16)
+    if arabicSuccess and arabicFontOrError then
+        self.arabicFont = arabicFontOrError
         print("Arabic font (NotoSansArabic) loaded successfully")
     else
-        print("Warning: Arabic font not found. Arabic may not display correctly.")
-        self.arabicFont = love.graphics.newFont(14)
+        print("Warning: Arabic font failed to load. Error: " .. tostring(arabicFontOrError))
+        print("Arabic text may not display correctly.")
+        self.arabicFont = love.graphics.newFont(16)
     end
     
-    -- Load Chinese (Simplified) font
-    local chineseSuccess, chineseFont = pcall(love.graphics.newFont, "assets/fonts/NotoSansSC-VariableFont_wght.ttf", 14)
-    if chineseSuccess then
-        self.chineseFont = chineseFont
+    -- Try loading Chinese (Simplified) font
+    local chineseSuccess, chineseFontOrError = pcall(love.graphics.newFont, "assets/fonts/NotoSansSC-VariableFont_wght.ttf", 16)
+    if chineseSuccess and chineseFontOrError then
+        self.chineseFont = chineseFontOrError
         print("Chinese font (NotoSansSC) loaded successfully")
     else
-        print("Warning: Chinese font not found. Chinese may not display correctly.")
-        self.chineseFont = love.graphics.newFont(14)
+        print("Warning: Chinese font failed to load. Error: " .. tostring(chineseFontOrError))
+        print("Chinese text may not display correctly.")
+        self.chineseFont = love.graphics.newFont(16)
     end
     
-    -- Use Arabic font as default for better Unicode coverage
+    -- Set default font
     self.unicodeFont = self.arabicFont
-    love.graphics.setFont(self.unicodeFont)
-    print("Unicode fonts loaded successfully - Chinese and Arabic will display correctly")
+    
+    -- Try to create a fallback font that includes Unicode ranges
+    local fallbackSuccess, fallbackFont = pcall(function()
+        return love.graphics.newFont(16)
+    end)
+    
+    if fallbackSuccess then
+        self.fallbackFont = fallbackFont
+    end
+    
+    love.graphics.setFont(self:getFont())
+    print("Font initialization complete")
 end
 
 -- Get the appropriate font for the current language
@@ -61,7 +73,7 @@ end
 Localization.strings = {
     -- Menu strings
     menu_title = {
-        en = "Escape the Haunted House!!",
+        en = "Escape the Haunted House!!!",
         zh = "逃离鬼屋！",
         ar = "!اهرب من البيت المسكون"
     },
@@ -374,6 +386,7 @@ end
 function Localization:setLanguage(lang)
     if self.languages[lang] then
         self.currentLanguage = lang
+        love.graphics.setFont(self:getFont())
         print("Language set to: " .. self.languages[lang])
     else
         print("Language not found: " .. tostring(lang))
