@@ -14,16 +14,38 @@ function character.new(name, startX, startY, startZ)
     local decelDistance = 0.8  -- start slowing down within this distance
     local shadow = dream:loadObject("assets/cube") -- shadow 
 
-  -- This looks for "player.dae" in your project folder.
-    local object = dream:loadObject("assets/human_model")
+    -- Load player model
+    local object = dream:loadObject("assets/player")
     
-    -- Apply Red Shiny Material
+    -- Load player texture with proper wrapping for negative UVs
+    local img_status, playerTexture = pcall(love.graphics.newImage, "assets/player.png")
+    if img_status and playerTexture then
+        playerTexture:setWrap("repeat", "repeat")
+    else
+        playerTexture = nil
+    end
+    
     local mat = dream:newMaterial()
-    mat.color = {1.0, 0.0, 0.0, 1.0} -- Bright Red
-    mat.roughness = 0.2              -- Shiny (Low roughness)
-    mat.metallic = 0.0               -- Plastic-like
+    mat.color = {1, 1, 1, 1}
+    mat.roughness = 0.6
+    mat.metallic = 0.1
+    mat.cullMode = "none"
+    if playerTexture then mat.albedoTexture = playerTexture end
     
-    mat.cullMode = "none" 
+    local function paintRecursive(obj, material)
+        if obj.meshes then
+            for _, mesh in pairs(obj.meshes) do
+                mesh.material = material
+            end
+        end
+        if obj.objects then
+            for _, child in pairs(obj.objects) do
+                paintRecursive(child, material)
+            end
+        end
+    end
+    
+    paintRecursive(object, mat)
     
     -- Apply Shadow
     local shadowMat = dream:newMaterial()
@@ -47,26 +69,6 @@ function character.new(name, startX, startY, startZ)
     end
 
     paintShadow(shadow, shadowMat)
-
-    -- 3. Recursive Paint Function
-    -- Applies our double-sided material to every part of the model
-    local function paintRecursive(obj, material)
-        -- Paint meshes at this level
-        if obj.meshes then
-            for _, mesh in pairs(obj.meshes) do
-                mesh.material = material
-            end
-        end
-        
-        -- Dig deeper into children
-        if obj.objects then
-            for _, child in pairs(obj.objects) do
-                paintRecursive(child, material)
-            end
-        end
-    end
-
-    paintRecursive(object, mat)
 
     ----- LOGIC ----
     function self:walkTo(tx, tz)
