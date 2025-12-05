@@ -13,6 +13,8 @@ local door
 local door_object
 local wall_left
 local wall_right
+local key_object
+local key_item = { x = 0, z = -4.5, visible = false, collected = false }
 local worldBounds = { minX = -12, maxX = 12, minZ = -12, maxZ = 12 }
 local inventory
 local cannonLoaded = false
@@ -72,6 +74,12 @@ function room1_scene:load()
         cannonLoaded = state.cannonLoaded
         missCount = state.missCount
         gameOver = state.gameOver
+        if state.keyVisible ~= nil then
+            key_item.visible = state.keyVisible
+        end
+        if state.keyCollected ~= nil then
+            key_item.collected = state.keyCollected
+        end
         _G.room1State = nil  -- Clear after use
         print("Room1 state restored successfully")
     else
@@ -85,6 +93,7 @@ function room1_scene:load()
     -- Create wall objects on both sides of the door
     wall_left = dream:loadObject("assets/cube")
     wall_right = dream:loadObject("assets/cube")
+    key_object = dream:loadObject("assets/key")
     
     floor_tile = dream:loadObject("assets/cube")
 
@@ -104,7 +113,9 @@ function room1_scene:update(dt)
             cannonballPosition = cannonball and { x = cannonball.x, z = cannonball.z } or { x = 1, z = 3 },
             cannonLoaded = cannonLoaded,
             missCount = missCount,
-            gameOver = gameOver
+            gameOver = gameOver,
+            keyVisible = key_item.visible,
+            keyCollected = key_item.collected
         }
         
         -- Update door explosion/falling animation
@@ -114,6 +125,20 @@ function room1_scene:update(dt)
             if door.explosionTime > 1.0 then
                 door.exploding = false
                 door.fallen = true
+                -- Make key visible when door is destroyed
+                key_item.visible = true
+            end
+        end
+        
+        -- Auto-pickup key when player gets close
+        if key_item.visible and not key_item.collected then
+            local px, pz = player:getX(), player:getZ()
+            local distToKey = math.sqrt((px - key_item.x)^2 + (pz - key_item.z)^2)
+            if distToKey < 1.0 then
+                key_item.collected = true
+                inventory:addItem("Key_room1", "Room 1 Key")
+                interactionMessage = "Found a key!"
+                messageTimer = 2
             end
         end
         
@@ -334,6 +359,34 @@ function room1_scene:draw()
             end
             dream:draw(door_object)
         end
+        
+        -- Draw key when visible and not collected
+        if key_item.visible and not key_item.collected and key_object then
+            local mat = dream:newMaterial()
+            mat.color = {1, 0.84, 0, 1} -- Gold color
+            mat.roughness = 0.2
+            mat.metallic = 0.8
+            mat.cullMode = "none"
+            
+            local function paintRecursive(obj, material)
+                if obj.meshes then
+                    for _, mesh in pairs(obj.meshes) do
+                        mesh.material = material
+                    end
+                end
+                if obj.objects then
+                    for _, child in pairs(obj.objects) do
+                        paintRecursive(child, material)
+                    end
+                end
+            end
+            
+            paintRecursive(key_object, mat)
+            key_object:resetTransform()
+            key_object:translate(key_item.x, 0.6, key_item.z)
+            key_object:scale(0.25, 0.25, 0.25)
+            dream:draw(key_object)
+        end
     
     dream:present()
     
@@ -468,7 +521,9 @@ function room1_scene:mousepressed(mouseX, mouseY, button)
                 door.fallen = false
                 door.explosionTime = 0
                 cannonball = Cannonball.new(1, 3)
-                interactionMessage = _G.localization:get("puzzle_restarted")
+                key_item.visible = false
+                key_item.collected = false
+                interactionMessage = "Puzzle restarted!"
                 messageTimer = 2
             end
             return
@@ -619,6 +674,14 @@ function room1_scene:mousemoved(mouseX, mouseY)
             isHoveringInteractive = true
         end
     end
+    
+    -- Check key
+    if key_item.visible and not key_item.collected then
+        local keyDist = math.sqrt((mouseWorldX - key_item.x)^2 + (mouseWorldZ - key_item.z)^2)
+        if keyDist < 1.0 then
+            isHoveringInteractive = true
+        end
+    end
 end
 
 function room1_scene:mousereleased(mouseX, mouseY, button)
@@ -641,6 +704,7 @@ function room1_scene:mousereleased(mouseX, mouseY, button)
                 player:walkTo(cannon.x, cannon.z)
                 interactionMessage = _G.localization:get("walking_to_cannon")
                 messageTimer = 2
+                inventory:close()
             else
                 interactionMessage = _G.localization:get("too_far_cannon")
                 messageTimer = 2

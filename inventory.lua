@@ -14,10 +14,14 @@ end
 
 function Inventory:addItem(itemName, displayName)
     if not self.items[itemName] then
-        -- TODO: Revert to image path when Key images are properly created
         local icon = nil
-        -- Keys use placeholder (yellow square drawn in draw function)
-        if itemName ~= "Key" and itemName ~= "Key_room3" then
+        -- Keys use key.png
+        if itemName == "Key" or itemName == "Key_room3" or itemName == "Key_room1" then
+            icon = love.graphics.newImage("assets/key.png")
+        -- Boxes use crate.jpg
+        elseif itemName:match("^box%d+$") then
+            icon = love.graphics.newImage("assets/crate.jpg")
+        else
             icon = love.graphics.newImage("assets/" .. itemName .. ".png")
         end
         
@@ -74,8 +78,12 @@ function Inventory:stopDrag()
 end
 
 function Inventory:getSlotPosition(itemName)
-    local startX = love.graphics.getWidth() / 2 - 150
-    local startY = love.graphics.getHeight() / 2 - 50
+    local panelW = 350
+    local panelH = 200
+    local panelX = love.graphics.getWidth() - panelW - 20
+    local panelY = love.graphics.getHeight() - panelH - 20
+    local startX = panelX + 45
+    local startY = panelY + 60
     local slotSize = 60
     local padding = 10
     
@@ -118,8 +126,8 @@ function Inventory:draw(mouseX, mouseY)
     -- Draw inventory panel
     local panelW = 350
     local panelH = 200
-    local panelX = love.graphics.getWidth() / 2 - panelW / 2
-    local panelY = love.graphics.getHeight() / 2 - panelH / 2
+    local panelX = love.graphics.getWidth() - panelW - 20
+    local panelY = love.graphics.getHeight() - panelH - 20
     
     -- Panel background
     love.graphics.setColor(0.1, 0.1, 0.15, 0.95)
@@ -166,10 +174,6 @@ function Inventory:draw(mouseX, mouseY)
                 local iconW, iconH = icon:getWidth(), icon:getHeight()
                 local scale = (slotSize - 20) / math.max(iconW, iconH)
                 love.graphics.draw(icon, x + 10, y + 10, 0, scale, scale)
-            else
-                -- Placeholder for items without icons (e.g., Key)
-                love.graphics.setColor(0.9, 0.8, 0.1)  -- Yellow for Key
-                love.graphics.rectangle("fill", x + 10, y + 10, slotSize - 20, slotSize - 20, 3, 3)
             end
             
             -- Item name
@@ -194,10 +198,6 @@ function Inventory:draw(mouseX, mouseY)
             local iconW, iconH = icon:getWidth(), icon:getHeight()
             local scale = (slotSize - 20) / math.max(iconW, iconH)
             love.graphics.draw(icon, x + 10, y + 10, 0, scale, scale)
-        else
-            -- Placeholder for items without icons (e.g., Key)
-            love.graphics.setColor(0.9, 0.8, 0.1, 0.8)  -- Yellow for Key
-            love.graphics.rectangle("fill", x + 10, y + 10, slotSize - 20, slotSize - 20)
         end
         
         love.graphics.setColor(1, 1, 1, 0.8)
@@ -219,10 +219,14 @@ function Inventory:mousepressed(x, y, button)
             end
         else
             -- Check if clicking on an item to drag
+            local panelW = 350
+            local panelH = 200
+            local panelX = love.graphics.getWidth() - panelW - 20
+            local panelY = love.graphics.getHeight() - panelH - 20
             local slotSize = 60
             local padding = 10
-            local startX = love.graphics.getWidth() / 2 - 150
-            local startY = love.graphics.getHeight() / 2 - 50
+            local startX = panelX + 45
+            local startY = panelY + 60
             
             local index = 0
             for itemName, _ in pairs(self.items) do

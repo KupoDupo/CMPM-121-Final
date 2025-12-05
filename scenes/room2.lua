@@ -29,6 +29,7 @@ local pressurePlates = {}
 local bridge = { extended = false }
 local door = { x = 0, z = -9, locked = true }
 local initialBlockPositions = {}
+local placedBoxes = {}  -- Boxes placed on pressure plates from inventory
 
 function room2_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.15, 0.2)
@@ -50,7 +51,7 @@ function room2_scene:load()
     gap_object = dream:loadObject("assets/cube")
     bridge_object = dream:loadObject("assets/cube")
     door_object = dream:loadObject("assets/cube")
-    key_object = dream:loadObject("assets/cube")
+    key_object = dream:loadObject("assets/key")
     
     -- Create 3 pressure plates in front of the gap
     pressurePlates = {
@@ -61,10 +62,17 @@ function room2_scene:load()
     
     -- Create 3 moveable blocks scattered around the room
     blocks = {
-        { x = -6, z = 6, width = 1.2, height = 1.2, depth = 1.2, beingDragged = false },
-        { x = 3, z = 5, width = 1.2, height = 1.2, depth = 1.2, beingDragged = false },
-        { x = 6, z = 3, width = 1.2, height = 1.2, depth = 1.2, beingDragged = false }
+        { x = -6, z = 6, width = 1.2, height = 1.2, depth = 1.2, exists = true },
+        { x = 3, z = 5, width = 1.2, height = 1.2, depth = 1.2, exists = true },
+        { x = 6, z = 3, width = 1.2, height = 1.2, depth = 1.2, exists = true }
     }
+    
+    -- Check if boxes are already in inventory and mark them as not existing in world
+    for i = 1, #blocks do
+        if inventory:hasItem("box" .. i) then
+            blocks[i].exists = false
+        end
+    end
     
     -- Save initial block positions for respawn
     initialBlockPositions = {
@@ -76,11 +84,12 @@ function room2_scene:load()
     -- Restore room state if loading from save
     if _G.room2State then
         local state = _G.room2State
-        if state.blockPositions then
-            for i, pos in ipairs(state.blockPositions) do
+        if state.blockStates then
+            for i, blockState in ipairs(state.blockStates) do
                 if blocks[i] then
-                    blocks[i].x = pos.x
-                    blocks[i].z = pos.z
+                    blocks[i].x = blockState.x
+                    blocks[i].z = blockState.z
+                    blocks[i].exists = blockState.exists
                 end
             end
         end
@@ -91,6 +100,9 @@ function room2_scene:load()
                 end
             end
         end
+        if state.placedBoxes then
+            placedBoxes = state.placedBoxes
+        end
         bridge.extended = state.bridgeExtended
         door.locked = state.doorLocked
         key.collected = state.keyCollected
@@ -100,7 +112,7 @@ function room2_scene:load()
     
     -- Create visual objects for blocks
     for i = 1, #blocks do
-        block_objects[i] = dream:loadObject("assets/cube")
+        block_objects[i] = dream:loadObject("assets/crate")
     end
     
     -- Create visual objects for pressure plates
@@ -117,17 +129,18 @@ function room2_scene:update(dt)
         player:update(dt)
         
         -- Capture current state for save system
-        local blockPositions = {}
+        local blockStates = {}
         for i, block in ipairs(blocks) do
-            table.insert(blockPositions, { x = block.x, z = block.z })
+            table.insert(blockStates, { x = block.x, z = block.z, exists = block.exists })
         end
         local plateStates = {}
         for i, plate in ipairs(pressurePlates) do
             table.insert(plateStates, { activated = plate.activated })
         end
         _G.room2State = {
-            blockPositions = blockPositions,
+            blockStates = blockStates,
             pressurePlates = plateStates,
+            placedBoxes = placedBoxes,
             bridgeExtended = bridge.extended,
             doorLocked = door.locked,
             keyCollected = key.collected,
@@ -159,25 +172,47 @@ function room2_scene:update(dt)
             return
         end
         
-        -- Move selected block with mouse
-        if selectedBlock then
-            blocks[selectedBlock].x = mouseWorldX
-            blocks[selectedBlock].z = mouseWorldZ
-            
-            -- Clamp block position to world bounds
-            blocks[selectedBlock].x = math.max(worldBounds.minX, math.min(worldBounds.maxX, blocks[selectedBlock].x))
-            blocks[selectedBlock].z = math.max(worldBounds.minZ, math.min(worldBounds.maxZ, blocks[selectedBlock].z))
+        -- Auto-pickup boxes when player gets close
+        for i, block in ipairs(blocks) do
+            if block.exists then
+                local dx = player:getX() - block.x
+                local dz = player:getZ() - block.z
+                local distToBlock = math.sqrt(dx*dx + dz*dz)
+                if distToBlock < 1.0 then
+                    block.exists = false
+                    local success = inventory:addItem("box" .. i, "Box " .. i)
+                    print("Box " .. i .. " added to inventory:", success)
+                    interactionMessage = "Box " .. i .. " collected!"
+                    messageTimer = 2
+                end
+            end
+        end
+        
+        -- Auto-pickup placed boxes when player gets close
+        for i = #placedBoxes, 1, -1 do
+            local placedBox = placedBoxes[i]
+            local dx = player:getX() - placedBox.x
+            local dz = player:getZ() - placedBox.z
+            local distToBox = math.sqrt(dx*dx + dz*dz)
+            if distToBox < 1.0 then
+                -- Re-add the box with its original ID
+                local boxId = placedBox.id
+                table.remove(placedBoxes, i)
+                inventory:addItem("box" .. boxId, "Box " .. boxId)
+                interactionMessage = "Box " .. boxId .. " collected!"
+                messageTimer = 2
+            end
         end
         
         -- Check which pressure plates are activated
         for i, plate in ipairs(pressurePlates) do
             plate.activated = false
-            -- Check if any block is on this plate
-            for j, block in ipairs(blocks) do
-                local dx = block.x - plate.x
-                local dz = block.z - plate.z
+            -- Check if any placed box is on this plate
+            for j, placedBox in ipairs(placedBoxes) do
+                local dx = placedBox.x - plate.x
+                local dz = placedBox.z - plate.z
                 local dist = math.sqrt(dx*dx + dz*dz)
-                if dist < 0.8 then  -- Block is close enough to activate
+                if dist < 0.8 then  -- Box is close enough to activate
                     plate.activated = true
                     break
                 end
@@ -342,15 +377,11 @@ function room2_scene:draw()
             end
         end
         
-        -- Draw moveable blocks
+        -- Draw moveable blocks (only if they exist/not picked up)
         for i, block in ipairs(blocks) do
-            if block_objects[i] then
+            if block.exists and block_objects[i] then
                 local mat = dream:newMaterial()
-                if selectedBlock == i then
-                    mat.color = {0.9, 0.7, 0.3, 1}  -- Highlight selected block
-                else
-                    mat.color = {0.6, 0.4, 0.2, 1}  -- Brown stone
-                end
+                mat.color = {0.6, 0.4, 0.2, 1}  -- Brown stone
                 mat.roughness = 0.7
                 mat.cullMode = "none"
                 
@@ -370,8 +401,41 @@ function room2_scene:draw()
                 paintRecursive(block_objects[i], mat)
                 block_objects[i]:resetTransform()
                 block_objects[i]:translate(block.x, 0.6, block.z)
+                block_objects[i]:rotateX(math.pi)
                 block_objects[i]:scale(block.width, block.height, block.depth)
                 dream:draw(block_objects[i])
+            end
+        end
+        
+        -- Draw placed boxes from inventory
+        for i, placedBox in ipairs(placedBoxes) do
+            -- Use the appropriate block object based on box ID
+            local objIndex = placedBox.id
+            if objIndex and block_objects[objIndex] then
+                local mat = dream:newMaterial()
+                mat.color = {0.6, 0.4, 0.2, 1}  -- Brown stone
+                mat.roughness = 0.7
+                mat.cullMode = "none"
+                
+                local function paintRecursive(obj, material)
+                    if obj.meshes then
+                        for _, mesh in pairs(obj.meshes) do
+                            mesh.material = material
+                        end
+                    end
+                    if obj.objects then
+                        for _, child in pairs(obj.objects) do
+                            paintRecursive(child, material)
+                        end
+                    end
+                end
+                
+                paintRecursive(block_objects[objIndex], mat)
+                block_objects[objIndex]:resetTransform()
+                block_objects[objIndex]:translate(placedBox.x, 0.6, placedBox.z)
+                block_objects[objIndex]:rotateX(math.pi)
+                block_objects[objIndex]:scale(1.2, 1.2, 1.2)
+                dream:draw(block_objects[objIndex])
             end
         end
         
@@ -512,13 +576,18 @@ function room2_scene:mousepressed(mouseX, mouseY, button)
                 playerDead = false
                 deathTimer = 0
                 player = Character.new("Hero", 0, 0, 8)
-                selectedBlock = nil
                 
-                -- Reset blocks to initial positions
+                -- Reset blocks to initial positions and make them pickupable again
                 for i, block in ipairs(blocks) do
                     block.x = initialBlockPositions[i].x
                     block.z = initialBlockPositions[i].z
+                    block.exists = true
+                    -- Remove from inventory if picked up
+                    inventory:removeItem("box" .. i)
                 end
+                
+                -- Clear placed boxes
+                placedBoxes = {}
                 
                 -- Reset bridge and door
                 bridge.extended = false
@@ -542,32 +611,40 @@ function room2_scene:mousepressed(mouseX, mouseY, button)
             return
         end
         
-        if not selectedBlock then
-            -- Try to select a block
-            for i, block in ipairs(blocks) do
-                local dx = player:getX() - block.x
-                local dz = player:getZ() - block.z
-                local dist = math.sqrt(dx*dx + dz*dz)
-                
-                -- Can only grab blocks within range
-                if dist < 2.0 then
-                    selectedBlock = i
+        -- Convert mouse to world coordinates
+        local width, height = love.graphics.getDimensions()
+        local nx = (mouseX / width) * 2 - 1
+        local nz = (mouseY / height) * 2 - 1
+        local targetX = nx * 9
+        local targetZ = nz * 9
+        
+        -- Check if clicking on a box
+        for i, block in ipairs(blocks) do
+            if block.exists then
+                local hitboxOffsetZ = 0
+                local dist = math.sqrt((targetX - block.x)^2 + (targetZ - (block.z + hitboxOffsetZ))^2)
+                if dist < 0.8 then
+                    -- Walk to the box
+                    player:walkTo(block.x, block.z)
                     return
                 end
             end
-            
-            -- No block selected, move player
-            if player and not player.isMoving then
-                local width, height = love.graphics.getDimensions()
-                local nx = (mouseX / width) * 2 - 1
-                local nz = (mouseY / height) * 2 - 1
-                local targetX = nx * 9
-                local targetZ = nz * 9
-                player:walkTo(targetX, targetZ)
+        end
+        
+        -- Check if clicking on a placed box
+        for i, placedBox in ipairs(placedBoxes) do
+            local hitboxOffsetZ = 0
+            local dist = math.sqrt((targetX - placedBox.x)^2 + (targetZ - (placedBox.z + hitboxOffsetZ))^2)
+            if dist < 0.8 then
+                -- Walk to the placed box
+                player:walkTo(placedBox.x, placedBox.z)
+                return
             end
-        else
-            -- Release the selected block
-            selectedBlock = nil
+        end
+        
+        -- Otherwise, move player
+        if player and not player.isMoving then
+            player:walkTo(targetX, targetZ)
         end
     end
 end
@@ -579,22 +656,33 @@ function room2_scene:mousemoved(mouseX, mouseY)
     mouseWorldZ = (mouseY / height) * 2 - 1
     mouseWorldZ = mouseWorldZ * 18
     
-    -- Check if hovering over any block
+    -- Check if hovering over any box
     isHoveringInteractive = false
-    if player then
+    if player and not inventory.isOpen then
+        local width, height = love.graphics.getDimensions()
+        local nx = (mouseX / width) * 2 - 1
+        local nz = (mouseY / height) * 2 - 1
+        local targetX = nx * 9
+        local targetZ = nz * 9
+        
         for i, block in ipairs(blocks) do
-            local dx = player:getX() - block.x
-            local dz = player:getZ() - block.z
-            local dist = math.sqrt(dx*dx + dz*dz)
-            
-            -- Check distance to block (with Z-offset compensation)
-            local blockDx = mouseWorldX - block.x
-            local blockDz = mouseWorldZ - block.z
-            local blockDist = math.sqrt(blockDx*blockDx + blockDz*blockDz)
-            
-            if dist < 2.0 and blockDist < 1.0 then
-                isHoveringInteractive = true
-                break
+            if block.exists then
+                local blockDist = math.sqrt((targetX - block.x)^2 + (targetZ - block.z)^2)
+                if blockDist < 0.8 then
+                    isHoveringInteractive = true
+                    break
+                end
+            end
+        end
+        
+        -- Check placed boxes too
+        if not isHoveringInteractive then
+            for i, placedBox in ipairs(placedBoxes) do
+                local blockDist = math.sqrt((targetX - placedBox.x)^2 + (targetZ - placedBox.z)^2)
+                if blockDist < 0.8 then
+                    isHoveringInteractive = true
+                    break
+                end
             end
         end
     end
@@ -613,7 +701,7 @@ function room2_scene:mousereleased(mouseX, mouseY, button)
         local dropZ = nz * 9
         
         -- Example interaction logic - you can add items and interactions here
-        interactionMessage = _G.localization:get("item_doesnt_work")
+        interactionMessage = "That item doesn't work here."
         messageTimer = 2
     end
 end

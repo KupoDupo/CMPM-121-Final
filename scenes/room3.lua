@@ -42,6 +42,7 @@ function room3_scene:load()
     door_object = dream:loadObject("assets/cube")
     wall_left = dream:loadObject("assets/cube")
     wall_right = dream:loadObject("assets/cube")
+    key_object = dream:loadObject("assets/key")
     sun = dream:newLight("sun", dream.vec3(10, 10, 10), dream.vec3(1,1,1), 1.5)
     sun:addNewShadow()
     
@@ -180,16 +181,15 @@ function room3_scene:draw()
         mat.color = {1, 1, 0.2, 1}
         mat.roughness = 0.2
         mat.cullMode = "none"
-        local key_obj = door_object -- reusing cube
         local function paintRecursive(obj, material)
             if obj.meshes then for _, mesh in pairs(obj.meshes) do mesh.material = material end end
             if obj.objects then for _, child in pairs(obj.objects) do paintRecursive(child, material) end end
         end
-        paintRecursive(key_obj, mat)
-        key_obj:resetTransform()
-        key_obj:translate(key_local.x, 0.6, key_local.z)
-        key_obj:scale(0.4,0.4,0.4)
-        dream:draw(key_obj)
+        paintRecursive(key_object, mat)
+        key_object:resetTransform()
+        key_object:translate(key_local.x, 0.6, key_local.z)
+        key_object:scale(0.4,0.4,0.4)
+        dream:draw(key_object)
     end
 
     dream:present()
@@ -271,7 +271,12 @@ function room3_scene:mousemoved(mx,my)
 end
 
 function room3_scene:mousereleased(mx,my,button)
-    inventory:mousereleased(mx,my,button)
+    local droppedItem = inventory:mousereleased(mx,my,button)
+    
+    if droppedItem then
+        -- Close inventory after any interaction attempt
+        inventory:close()
+    end
 end
 
 function room3_scene:keypressed(key)
