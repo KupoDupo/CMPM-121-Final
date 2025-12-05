@@ -889,7 +889,20 @@ function room2_scene:mousereleased(mouseX, mouseY, button)
 end
 
 function room2_scene:keypressed(key)
-    if key == "e" then
+    if key == "escape" then
+        print("Returning to main menu...")
+        scenery.setScene("menu")
+        return true
+    elseif key == "s" then
+        local SaveManager = require("savemanager")
+        local player = _G.currentPlayer
+        if SaveManager.manualSave(1, "room2", player, globalInventory) then
+            _G.manualSaveNotification = "Game Manually Saved"
+            _G.manualSaveTimer = 2
+            print("Manual save successful")
+        end
+        return true
+    elseif key == "e" then
         if nearForwardDoor then
             print("Player reached the exit! Loading next scene...")
             _G.savedPlayerPosition = { x = 0, y = 0, z = 6 }  -- Spawn near back of room 3

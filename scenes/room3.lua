@@ -467,7 +467,20 @@ function room3_scene:mousereleased(mx,my,button)
 end
 
 function room3_scene:keypressed(key)
-    if key == "e" then
+    if key == "escape" then
+        print("Returning to main menu...")
+        scenery.setScene("menu")
+        return true
+    elseif key == "s" then
+        local SaveManager = require("savemanager")
+        local player = _G.currentPlayer
+        if SaveManager.manualSave(1, "room3", player, globalInventory) then
+            _G.manualSaveNotification = "Game Manually Saved"
+            _G.manualSaveTimer = 2
+            print("Manual save successful")
+        end
+        return true
+    elseif key == "e" then
         if nearForwardDoor then
             print("Player reached the exit! Loading ending scene...")
             scenery.setScene("ending")

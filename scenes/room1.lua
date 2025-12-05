@@ -36,6 +36,10 @@ local tutorialText = {
     "- Click objects to interact with them",
     "- Drag items from your inventory",
     "  to use them on objects",
+    "- Press S to manually save your game",
+    "- Press ESC to return to main menu",
+    "",
+    "The game also auto-saves regularly.",
     "",
     "Click anywhere to continue..."
 }
@@ -568,10 +572,11 @@ function room1_scene:draw()
         for i, line in ipairs(tutorialText) do
             if i == 1 then
                 -- Title in larger font
-                love.graphics.push()
-                love.graphics.setNewFont(20)
+                local originalFont = love.graphics.getFont()
+                local titleFont = love.graphics.newFont(20)
+                love.graphics.setFont(titleFont)
                 love.graphics.printf(line, boxX, textY, boxWidth, "center")
-                love.graphics.pop()
+                love.graphics.setFont(originalFont)
                 textY = textY + 35
             elseif i == 3 then
                 -- "Controls:" header
@@ -828,7 +833,20 @@ function room1_scene:mousereleased(mouseX, mouseY, button)
 end
 
 function room1_scene:keypressed(key)
-    if key == "e" then
+    if key == "escape" then
+        print("Returning to main menu...")
+        scenery.setScene("menu")
+        return true
+    elseif key == "s" then
+        local SaveManager = require("savemanager")
+        local player = _G.currentPlayer
+        if SaveManager.manualSave(1, "room1", player, globalInventory) then
+            _G.manualSaveNotification = "Game Manually Saved"
+            _G.manualSaveTimer = 2
+            print("Manual save successful")
+        end
+        return true
+    elseif key == "e" then
         if nearForwardDoor then
             print("Transitioning to Room 2!")
             scenery.setScene("room2")
