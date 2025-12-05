@@ -160,8 +160,8 @@ function room2_scene:update(dt)
         
         -- Check if player fell into gap
         local px, pz = player:getX(), player:getZ()
-        local inGapX = px >= -3 and px <= 3
-        local inGapZ = pz >= -4 and pz <= -1
+        local inGapX = px >= -2.5 and px <= 2.5
+        local inGapZ = pz >= -3.5 and pz <= -1.5
         
         if inGapX and inGapZ and not bridge.extended then
             -- Player fell into the gap!
@@ -660,6 +660,19 @@ function room2_scene:mousepressed(mouseX, mouseY, button)
                 player:walkTo(placedBox.x, placedBox.z)
                 return
             end
+        end
+        
+        -- Check if target is in or near the gap (black area) and bridge is not extended
+        -- Add buffer zone around gap to create invisible walls
+        local gapBuffer = 0.5
+        local inGapX = targetX >= (-3 - gapBuffer) and targetX <= (3 + gapBuffer)
+        local inGapZ = targetZ >= (-4 - gapBuffer) and targetZ <= (-1 + gapBuffer)
+        
+        if inGapX and inGapZ and not bridge.extended then
+            -- Don't allow walking into or near the gap
+            interactionMessage = "Can't walk there!"
+            messageTimer = 1
+            return
         end
         
         -- Otherwise, move player
