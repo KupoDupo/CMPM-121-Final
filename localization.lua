@@ -350,10 +350,10 @@ Localization.strings = {
         zh = "感谢游玩！",
         ar = "!شكرا للعب"
     },
-    press_r_menu = {
-        en = "Press R to return to menu",
-        zh = "按 R 返回菜单",
-        ar = "R اضغط على للعودة إلى القائمة"
+    press_esc_exit = {
+        en = "Press ESC to exit",
+        zh = "按 ESC 退出",
+        ar = "ESC اضغط على للخروج"
     },
     
     -- Interaction messages

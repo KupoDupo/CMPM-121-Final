@@ -222,11 +222,11 @@ function ending_scene:draw()
     love.graphics.setColor(0.6, 0.6, 0.6, fadeIn * 0.7)
     love.graphics.printf(_G.localization:get("thanks_playing"), 0, height / 2 + 40, width, "center")
     
-    -- Restart prompt
+    -- Exit prompt
     if fadeIn >= 1 then
         local pulse = math.sin(love.timer.getTime() * 3) * 0.3 + 0.7
         love.graphics.setColor(1, 1, 1, pulse)
-        love.graphics.printf(_G.localization:get("press_r_menu"), 0, height - 60, width, "center")
+        love.graphics.printf(_G.localization:get("press_esc_exit"), 0, height - 60, width, "center")
     end
     
     love.graphics.setColor(1, 1, 1)

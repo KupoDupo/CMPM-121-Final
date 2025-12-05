@@ -302,23 +302,6 @@ function room3_scene:draw()
         end
     end
     
-    -- Draw objective text
-    love.graphics.setColor(1, 1, 1)
-    local hasRoom1Key = inventory:hasItem("Key_room1")
-    local hasRoom2Key = inventory:hasItem("Key_room2")
-    local hasRoom3Key = inventory:hasItem("Key_room3")
-    local totalKeys = (hasRoom1Key and 1 or 0) + (hasRoom2Key and 1 or 0) + (hasRoom3Key and 1 or 0)
-    
-    if door.disappeared then
-        love.graphics.print("Objective: Exit through the door!", 10, 80)
-    elseif totalKeys == 3 then
-        love.graphics.print("Objective: Use keys on door", 10, 80)
-        love.graphics.setColor(0.8, 0.8, 0)
-        love.graphics.print("(Open inventory and drag keys to the door)", 10, 100)
-    elseif totalKeys < 3 then
-        love.graphics.print("Objective: Collect all keys (" .. totalKeys .. "/3)", 10, 80)
-    end
-
     -- Draw interaction messages
     if messageTimer>0 then
         love.graphics.setColor(0.2,0.8,0.2,math.min(1,messageTimer))
