@@ -475,7 +475,7 @@ function room1_scene:draw()
         love.graphics.print("Objective: Find the Cannonball", 10, 60)
     elseif inventory:hasItem("cannonball") and not cannonLoaded and not aimingMode then
         love.graphics.print("Objective: Load the Cannonball into the Cannon", 10, 60)
-        love.graphics.print("(Walk near the cannon or drag from inventory)", 10, 80)
+        love.graphics.print("(Drag the cannonball from inventory to the cannon)", 10, 80)
     elseif aimingMode then
         love.graphics.print("Objective: BLAST THE DOOR!", 10, 60)
         love.graphics.setColor(1, 0, 0)
