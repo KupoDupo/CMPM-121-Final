@@ -242,7 +242,7 @@ function room2_scene:update(dt)
           local dz = player:getZ() - key.z
           if math.sqrt(dx*dx + dz*dz) < 1.2 then
             key.collected = true
-            inventory:addItem("Key")   -- Or whatever your inventory uses
+            inventory:addItem("Key_room2", "Room 2 Key")
             interactionMessage = "You picked up a key!"
             messageTimer = 3
           end
