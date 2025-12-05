@@ -22,6 +22,11 @@ local key_local = { x = 2, z = 2, collected = false }
 
 -- Door with lock tracking
 door = { x = 0, z = -6, locked = true, disappeared = false }
+local backDoor = { x = 0, z = 8 }  -- Door to go back to Room 2
+local backDoor_object
+local teleportCooldown = 0  -- Prevent immediate re-teleportation
+local nearForwardDoor = false  -- Track if player is near forward exit
+local nearBackDoor = false  -- Track if player is near back exit
 local locksRemaining = 3  -- Three locks on the door
 local keysUsedOnDoor = {
     Key_room1 = false,
@@ -31,6 +36,9 @@ local keysUsedOnDoor = {
 
 function room3_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
+    
+    teleportCooldown = 1.0  -- 1 second cooldown after entering room
+    
     inventory = globalInventory  -- Use global inventory
     
     -- Restore player position from save or use default
@@ -46,6 +54,7 @@ function room3_scene:load()
     
     floor_tile = dream:loadObject("assets/cube")
     door_object = dream:loadObject("assets/cube")
+    backDoor_object = dream:loadObject("assets/cube")
     wall_left = dream:loadObject("assets/cube")
     wall_right = dream:loadObject("assets/cube")
     key_object = dream:loadObject("assets/key")
@@ -69,6 +78,11 @@ function room3_scene:load()
 end
 
 function room3_scene:update(dt)
+    -- Update teleport cooldown
+    if teleportCooldown > 0 then
+        teleportCooldown = teleportCooldown - dt
+    end
+    
     if player then
         player:update(dt)
         
@@ -104,9 +118,21 @@ function room3_scene:update(dt)
 
         -- Exit through the door
         local px, pz = player:getX(), player:getZ()
-        if door.disappeared and px >= door.x - 1 and px <= door.x + 1 and pz <= door.z + 1 then
-            print("Player reached the exit! Loading ending scene...")
-            scenery.setScene("ending")
+        if teleportCooldown <= 0 and door.disappeared and px >= door.x - 1 and px <= door.x + 1 and pz <= door.z + 1 then
+            nearForwardDoor = true
+            interactionMessage = "Press E to enter Ending"
+            messageTimer = 0.1
+        else
+            nearForwardDoor = false
+        end
+        
+        -- Back door - return to Room 2
+        if teleportCooldown <= 0 and px >= backDoor.x - 2 and px <= backDoor.x + 2 and pz >= backDoor.z - 1 then
+            nearBackDoor = true
+            interactionMessage = "Press E to return to Room 2"
+            messageTimer = 0.1
+        else
+            nearBackDoor = false
         end
 
         -- Fixed overhead camera
@@ -186,6 +212,33 @@ function room3_scene:draw()
         door_object:translate(door.x, 1.5, door.z)
         door_object:scale(2, 3, 0.2)
         dream:draw(door_object)
+    end
+    
+    -- Draw back door
+    if backDoor_object then
+        local backDoor_mat = dream:newMaterial()
+        backDoor_mat.color = {0.2, 0.5, 0.2, 1}  -- Green color to indicate exit
+        backDoor_mat.roughness = 0.4
+        backDoor_mat.cullMode = "none"
+        
+        local function paintRecursive(obj, material)
+            if obj.meshes then
+                for _, mesh in pairs(obj.meshes) do
+                    mesh.material = material
+                end
+            end
+            if obj.objects then
+                for _, child in pairs(obj.objects) do
+                    paintRecursive(child, material)
+                end
+            end
+        end
+        
+        paintRecursive(backDoor_object, backDoor_mat)
+        backDoor_object:resetTransform()
+        backDoor_object:translate(backDoor.x, 1.5, backDoor.z)
+        backDoor_object:scale(2.0, 3.0, 0.2)
+        dream:draw(backDoor_object)
     end
 
     -- Draw local Room 3 key (player must also have the Room 2 key in inventory to unlock door)
@@ -272,6 +325,45 @@ function room3_scene:draw()
         love.graphics.rectangle("fill", love.graphics.getWidth()/2-150,130,300,40,5,5)
         love.graphics.setColor(1,1,1,math.min(1,messageTimer))
         love.graphics.printf(interactionMessage, love.graphics.getWidth()/2-145,142,290,"center")
+    end
+    
+    -- Draw door transition prompts (large and centered)
+    if nearForwardDoor then
+        local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+        local boxWidth, boxHeight = 400, 80
+        local boxX, boxY = w / 2 - boxWidth / 2, h / 2 - boxHeight / 2
+        
+        -- Background box with border
+        love.graphics.setColor(0.1, 0.1, 0.15, 0.95)
+        love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setColor(0.3, 0.8, 0.3, 1)
+        love.graphics.setLineWidth(4)
+        love.graphics.rectangle("line", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setLineWidth(1)
+        
+        -- Text
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.printf("[E] Enter Ending", boxX, boxY + 20, boxWidth, "center")
+        love.graphics.setColor(0.7, 0.7, 0.7, 1)
+        love.graphics.printf("Press E to proceed", boxX, boxY + 45, boxWidth, "center")
+    elseif nearBackDoor then
+        local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+        local boxWidth, boxHeight = 400, 80
+        local boxX, boxY = w / 2 - boxWidth / 2, h / 2 - boxHeight / 2
+        
+        -- Background box with border (different color for back door)
+        love.graphics.setColor(0.1, 0.1, 0.15, 0.95)
+        love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setColor(0.8, 0.6, 0.3, 1)
+        love.graphics.setLineWidth(4)
+        love.graphics.rectangle("line", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setLineWidth(1)
+        
+        -- Text
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.printf("[E] Return to Room 2", boxX, boxY + 20, boxWidth, "center")
+        love.graphics.setColor(0.7, 0.7, 0.7, 1)
+        love.graphics.printf("Press E to go back", boxX, boxY + 45, boxWidth, "center")
     end
 
     love.graphics.setColor(1,1,1)
@@ -375,6 +467,19 @@ function room3_scene:mousereleased(mx,my,button)
 end
 
 function room3_scene:keypressed(key)
+    if key == "e" then
+        if nearForwardDoor then
+            print("Player reached the exit! Loading ending scene...")
+            scenery.setScene("ending")
+            return true
+        elseif nearBackDoor then
+            print("Returning to Room 2...")
+            _G.savedPlayerPosition = { x = 0, y = 0, z = -7 }  -- Spawn near forward door in room 2
+            _G.previousRoom = "room3"  -- Track where we came from
+            scenery.setScene("room2")
+            return true
+        end
+    end
     return inventory:keypressed(key)
 end
 

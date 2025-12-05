@@ -24,6 +24,7 @@ local missCount = 0
 local gameOver = false
 local mouseWorldX, mouseWorldZ = 0, 0
 local isHoveringInteractive = false
+local nearForwardDoor = false  -- Track if player is near forward exit
 local interactionMessage = ""
 local messageTimer = 0
 
@@ -187,11 +188,14 @@ function room1_scene:update(dt)
             local doorRightX = door.x + 1.0
             -- If player crosses through the door opening
             if px >= doorLeftX and px <= doorRightX and pz < door.z - 1.0 then
-                -- Transition to room 2
-                print("Transitioning to Room 2!")
-                scenery.setScene("room2")
-                return
+                nearForwardDoor = true
+                interactionMessage = "Press E to go to Room 2"
+                messageTimer = 0.1
+            else
+                nearForwardDoor = false
             end
+        else
+            nearForwardDoor = false
         end
         
         -- Camera follows player (lower height to zoom in)
@@ -432,6 +436,27 @@ function room1_scene:draw()
         love.graphics.rectangle("fill", love.graphics.getWidth() / 2 - 150, 60, 300, 40, 5, 5)
         love.graphics.setColor(1, 1, 1, math.min(1, messageTimer))
         love.graphics.printf(interactionMessage, love.graphics.getWidth() / 2 - 145, 72, 290, "center")
+    end
+    
+    -- Draw door transition prompt (large and centered)
+    if nearForwardDoor then
+        local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+        local boxWidth, boxHeight = 400, 80
+        local boxX, boxY = w / 2 - boxWidth / 2, h / 2 - boxHeight / 2
+        
+        -- Background box with border
+        love.graphics.setColor(0.1, 0.1, 0.15, 0.95)
+        love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setColor(0.3, 0.8, 0.3, 1)
+        love.graphics.setLineWidth(4)
+        love.graphics.rectangle("line", boxX, boxY, boxWidth, boxHeight, 10, 10)
+        love.graphics.setLineWidth(1)
+        
+        -- Text
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.printf("[E] Go to Room 2", boxX, boxY + 20, boxWidth, "center")
+        love.graphics.setColor(0.7, 0.7, 0.7, 1)
+        love.graphics.printf("Press E to enter", boxX, boxY + 45, boxWidth, "center")
     end
     
     love.graphics.setColor(1, 1, 1)
@@ -722,6 +747,13 @@ function room1_scene:mousereleased(mouseX, mouseY, button)
 end
 
 function room1_scene:keypressed(key)
+    if key == "e" then
+        if nearForwardDoor then
+            print("Transitioning to Room 2!")
+            scenery.setScene("room2")
+            return true
+        end
+    end
     return inventory:keypressed(key)
 end
 
