@@ -11,7 +11,8 @@ local messageTimer = 0
 local victoryMessage = "Congratulations! You've completed all the puzzles!"
 local fadeIn = 0
 local particles = {}
-local numParticles = 20
+local numParticles = 100
+local playerRotation = 0
 
 function ending_scene:load()
     love.graphics.setBackgroundColor(0.05, 0.05, 0.15)
@@ -28,7 +29,7 @@ function ending_scene:load()
     messageTimer = 5
     fadeIn = 0
     
-    -- Create celebratory particles
+    -- Create celebratory particles using old system
     for i = 1, numParticles do
         table.insert(particles, {
             x = math.random(-8, 8),
@@ -45,7 +46,13 @@ end
 
 function ending_scene:update(dt)
     if player then
-        player:update(dt)
+        -- Keep player at center
+        player.x = 0
+        player.z = 0
+        player.y = 0
+        
+        -- Rotate player faster
+        playerRotation = playerRotation + dt * 10  -- 10 radians per second
         
         -- Fade in effect
         if fadeIn < 1 then
@@ -56,7 +63,7 @@ function ending_scene:update(dt)
             messageTimer = messageTimer - dt
         end
         
-        -- Update particles
+        -- Update particles using old system
         for _, p in ipairs(particles) do
             p.x = p.x + p.vx * dt
             p.y = p.y + p.vy * dt
@@ -84,7 +91,17 @@ function ending_scene:draw()
     dream:addLight(sun)
     
     if player then
-        player:draw()
+        -- Get player's model and draw with rotation
+        local playerModel = player:getObject()
+        
+        if playerModel then
+            playerModel:resetTransform()
+            playerModel:translate(0, 0, 0)  -- Center position
+            playerModel:rotateX(math.pi)  -- Flip horizontally (upside down)
+            playerModel:rotateY(playerRotation)  -- Apply rotation around vertical axis
+            playerModel:scale(0.5)
+            dream:draw(playerModel)
+        end
         
         -- Draw floor with special victory color
         if floor_tile then
@@ -148,12 +165,14 @@ function ending_scene:draw()
             dream:draw(victory_object)
         end
         
-        -- Draw floating particles
-        if victory_object then
+        -- Draw floating particles (confetti)
+        if #particles > 0 then
             for _, p in ipairs(particles) do
+                local confettiCube = dream:loadObject("assets/cube")
                 local mat = dream:newMaterial()
                 mat.color = {p.color[1], p.color[2], p.color[3], 1}
                 mat.roughness = 0.1
+                mat.metallic = 0.3
                 mat.cullMode = "none"
                 
                 local function paintRecursive(obj, material)
@@ -169,11 +188,11 @@ function ending_scene:draw()
                     end
                 end
                 
-                paintRecursive(victory_object, mat)
-                victory_object:resetTransform()
-                victory_object:translate(p.x, p.y, p.z)
-                victory_object:scale(p.size, p.size, p.size)
-                dream:draw(victory_object)
+                paintRecursive(confettiCube, mat)
+                confettiCube:resetTransform()
+                confettiCube:translate(p.x, p.y, p.z)
+                confettiCube:scale(p.size, p.size, p.size)
+                dream:draw(confettiCube)
             end
         end
     end
@@ -219,24 +238,8 @@ function ending_scene:mousepressed(mouseX, mouseY, button)
         return
     end
     
-    if button == 1 and player then
-        if inventory.isOpen then
-            return
-        end
-        
-        -- Allow player to walk around in the victory scene
-        local width, height = love.graphics.getDimensions()
-        local nx = (mouseX / width) * 2 - 1
-        local nz = (mouseY / height) * 2 - 1
-        local targetX = nx * 9
-        local targetZ = nz * 9
-        
-        -- Clamp to bounds
-        targetX = math.max(-12, math.min(12, targetX))
-        targetZ = math.max(-12, math.min(12, targetZ))
-        
-        player:walkTo(targetX, targetZ)
-    end
+    -- Player cannot move on ending screen
+    -- Movement disabled
 end
 
 function ending_scene:mousemoved(mouseX, mouseY)
