@@ -832,9 +832,60 @@ function room2_scene:mousereleased(mouseX, mouseY, button)
         local dropX = nx * 9
         local dropZ = nz * 9
         
-        -- Example interaction logic - you can add items and interactions here
-        interactionMessage = "That item doesn't work here."
-        messageTimer = 2
+        -- Check if dropping a box
+        if droppedItem:match("^box%d+$") then
+            -- Extract box ID from item name (e.g., "box1" -> 1)
+            local boxId = tonumber(droppedItem:match("%d+"))
+
+            -- Check if dropped on a pressure plate
+            local onPlate = false
+            for i, plate in ipairs(pressurePlates) do
+                local dx = dropX - plate.x
+                local dz = dropZ - plate.z
+                local dist = math.sqrt(dx*dx + dz*dz)
+                if dist < 1.5 then  -- Increased range for easier placement
+                    -- Check if this plate already has a box
+                    local plateHasBox = false
+                    for j, placedBox in ipairs(placedBoxes) do
+                        local pdx = placedBox.x - plate.x
+                        local pdz = placedBox.z - plate.z
+                        local pdist = math.sqrt(pdx*pdx + pdz*pdz)
+                        if pdist < 0.5 then  -- Stricter check for existing boxes
+                            plateHasBox = true
+                            break
+                        end
+                    end
+
+                    if plateHasBox then
+                        interactionMessage = "Plate already has a box!"
+                        messageTimer = 2
+                    else
+                        -- Place box on the plate center
+                        table.insert(placedBoxes, { x = plate.x, z = plate.z, id = boxId })
+                        inventory:removeItem(droppedItem)
+                        interactionMessage = "Box " .. boxId .. " placed on plate!"
+                        messageTimer = 2
+                    end
+                    onPlate = true
+                    break
+                end
+            end
+
+            if not onPlate then
+                -- Not on a plate, place it at drop location
+                table.insert(placedBoxes, { x = dropX, z = dropZ, id = boxId })
+                inventory:removeItem(droppedItem)
+                interactionMessage = "Box " .. boxId .. " placed!"
+                messageTimer = 2
+            end
+
+            inventory:close()
+        else
+            -- Invalid item for this room
+            interactionMessage = "That item doesn't work here."
+            messageTimer = 2
+            inventory:close()
+        end
     end
 end
 
