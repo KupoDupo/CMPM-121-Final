@@ -20,7 +20,7 @@ local messageTimer = 0
 local playerDead = false
 local deathTimer = 0
 local key_object
-local key = { x = 5, z = 5, collected = false}
+local key = { x = 0, z = -7, collected = false}
 local keySpawned = false
 
 -- Puzzle state
