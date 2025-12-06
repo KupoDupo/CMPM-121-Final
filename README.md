@@ -151,6 +151,7 @@ We implemented a continuous inventory system that allows players to pick up, sto
 4. External DSL:
 
 ## Reflection
+Looking back at our F3 devlog, we had already implemented features we thought were essential for a 3D mystery/puzzle room game, such as an inventory system that allows objects to be carried between rooms so that was really helpful before even looking at the F3 requirements. However for things that we needed to add such as Save system, External DSL, and 3 different Language support we wanted to have elements that we thought would add more of a game feel and overall experience to our game. We simply looked over the list and chose the things we thought would not only be effective but also really useful.
 
 # Credits
 - [Blocky Characters by Kenney](https://kenney.nl/assets/blocky-characters) - Used for Player model
