@@ -117,30 +117,32 @@ function room1_scene:load()
     -- Restore room state if loading from save
     print("Checking for _G.room1State:", _G.room1State and "YES" or "NO")
     if _G.room1State then
-        local state = _G.room1State
-        print("Restoring room1 state:")
-        print("  doorLocked:", state.doorLocked)
-        print("  doorFallen:", state.doorFallen)
-        print("  cannonballExists:", state.cannonballExists)
-        door.locked = state.doorLocked
-        door.fallen = state.doorFallen
-        if state.cannonballPosition then
-            cannonball = Cannonball.new(state.cannonballPosition.x, state.cannonballPosition.z)
+        local s = _G.room1State
+
+        -- door
+        door.locked = s.doorLocked
+        door.fallen = s.doorFallen
+        door.exploding = s.doorExploding or false
+        door.explosionTime = s.doorExplosionTime or 0
+
+        -- cannonball
+        if s.cannonballExists and s.cannonballPosition then
+            cannonball = Cannonball.new(s.cannonballPosition.x, s.cannonballPosition.z)
+            cannonball.exists = true
+        else
+            cannonball.exists = false
         end
-        cannonball.exists = state.cannonballExists
-        cannonLoaded = state.cannonLoaded
-        missCount = state.missCount
-        gameOver = state.gameOver
-        if state.keyVisible ~= nil then
-            key_item.visible = state.keyVisible
-        end
-        if state.keyCollected ~= nil then
-            key_item.collected = state.keyCollected
-        end
-        _G.room1State = nil  -- Clear after use
-        print("Room1 state restored successfully")
-    else
-        print("No room1 state to restore - using defaults")
+
+        cannonLoaded = s.cannonLoaded
+        missCount = s.missCount
+        gameOver = s.gameOver
+
+        -- key
+        if s.keyVisible ~= nil then key_item.visible = s.keyVisible end
+        if s.keyCollected ~= nil then key_item.collected = s.keyCollected end
+
+        -- cleanup
+        _G.room1State = nil
     end
     print("==================")
 
