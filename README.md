@@ -147,14 +147,12 @@ We didn't want to use a translation API from online since that felt like taking 
 2. Save/Load System Requirement:
 We created a save/load system that saves the player's progress in the game including their current room, inventory items, and puzzle states. We used Lua's built-in file I/O functions to read and write a save file in JSON format. When the player chooses to save the game, we serialize the relevant game state data into a JSON string and write it to a file. When loading, we read the file, parse the JSON string back into Lua tables, and restore the game state accordingly. This allows players to save their progress and continue from where they left off later. The game autosaves every 10 seconds, but you can manually save by pressing the "S" key. To load a saved game, you can press "Esc" to go to the main menu and press "Continue".
 3. Continous Inventory Requirement:
-We implemented a continuous inventory system that allows players to pick up, store, and use items across different rooms in the game. The inventory is represented as a box with multiple item icons inside, which are each labeled. Players can pick up items by clicking on them in the game world, which adds them to their inventory. The inventory UI displays the items the player has collected, and players can select and drag items to objects in the world use them in puzzles or interact with the environment. The inventory persists across room transitions, allowing players to carry items from one room to another and use them as needed to solve puzzles and progress through the game. The continous inventory matters because there is a key in each room that you must pick up and use to exit the final room.  If you don't have all the keys you must go back and grab them to escape and win.
+We implemented a continuous inventory system that allows players to pick up, store, and use items across different rooms in the game. The inventory is represented as a box with multiple item icons inside, which are each labeled. Players can pick up items by clicking on them in the game world, which adds them to their inventory. The inventory UI displays the items the player has collected, and players can select and drag items to objects in the world use them in puzzles or interact with the environment. The inventory persists across room transitions, allowing players to carry items from one room to another and use them as needed to solve puzzles and progress through the game. The continous inventory matters because there is a key in each room that you must pick up and use to exit the final room. If you don't have all the keys you must go back and grab them to escape and win.
 4. External DSL:
-
 
 ## Reflection
 
-
 # Credits
-<https://kenney.nl/assets/blocky-characters>[Blocky Characters by Kenney.nl] - Used for Player model
-<https://kenney.nl/assets/pirate-kit>[Pirate Kit by Kenney.nl] - Used for Cannon, Cannonball, Crate models
-<https://free3d.com/3d-model/key-v1--203749.html>[Key Model by printable_models] - Used for Key models
+- [Blocky Characters by Kenney](https://kenney.nl/assets/blocky-characters) - Used for Player model
+- [Pirate Kit by Kenney](https://kenney.nl/assets/pirate-kit) - Used for Cannon, Cannonball, Crate models
+- [Key Model by printable_models](https://free3d.com/3d-model/key-v1--203749.html) - Used for Key models
