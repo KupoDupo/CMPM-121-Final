@@ -151,4 +151,10 @@ We implemented a continuous inventory system that allows players to pick up, sto
 4. External DSL:
 
 
-## Reflection 
+## Reflection
+
+
+# Credits
+<https://kenney.nl/assets/blocky-characters>[Blocky Characters by Kenney.nl] - Used for Player model
+<https://kenney.nl/assets/pirate-kit>[Pirate Kit by Kenney.nl] - Used for Cannon, Cannonball, Crate models
+<https://free3d.com/3d-model/key-v1--203749.html>[Key Model by printable_models] - Used for Key models
