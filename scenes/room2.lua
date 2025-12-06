@@ -1,5 +1,6 @@
 local Character = require("character")
 local Inventory = require("inventory")
+local json = require("dkjson")
 
 local room2_scene = {}
 local player
@@ -20,14 +21,14 @@ local messageTimer = 0
 local playerDead = false
 local deathTimer = 0
 local key_object
-local key = { x = 0, z = -7, collected = false}
+local key 
 local keySpawned = false
 
 -- Puzzle state
 local blocks = {}
 local pressurePlates = {}
 local bridge = { extended = false }
-local door = { x = 0, z = -9, locked = true }
+local door
 local backDoor = { x = 0, z = 9 }  -- Door to go back to Room 1
 local backDoor_object
 local teleportCooldown = 0  -- Prevent immediate re-teleportation
@@ -39,12 +40,18 @@ local placedBoxes = {}  -- Boxes placed on pressure plates from inventory
 function room2_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.15, 0.2)
     
+    -- Load Room 2 DSL (JSON)
+    local file = love.filesystem.read("game_data/room2.json")
+    local room2Data = json.decode(file)
+    
     teleportCooldown = 1.0  -- 1 second cooldown after entering room
 
     inventory = globalInventory  -- Use global inventory
     
     -- Restore player position from save or use default
-    local startX, startY, startZ = 0, 0, 8
+    local startX = room2Data.playerStart.x
+    local startY = 0
+    local startZ = room2Data.playerStart.z
     if _G.savedPlayerPosition then
         startX = _G.savedPlayerPosition.x
         startY = _G.savedPlayerPosition.y
@@ -62,18 +69,28 @@ function room2_scene:load()
     key_object = dream:loadObject("assets/key")
     
     -- Create 3 pressure plates in front of the gap
-    pressurePlates = {
-        { x = -4, z = 0, activated = false, id = 1 },
-        { x = 0, z = 0, activated = false, id = 2 },
-        { x = 4, z = 0, activated = false, id = 3 }
-    }
+    pressurePlates = {}
+    for _, plate in ipairs(room2Data.pressurePlates) do
+        table.insert(pressurePlates, {
+            x = plate.x,
+            z = plate.z,
+            id = plate.id,
+            activated = false
+        })
+    end
     
     -- Create 3 moveable blocks scattered around the room
-    blocks = {
-        { x = -6, z = 6, width = 1.2, height = 1.2, depth = 1.2, exists = true },
-        { x = 3, z = 5, width = 1.2, height = 1.2, depth = 1.2, exists = true },
-        { x = 6, z = 3, width = 1.2, height = 1.2, depth = 1.2, exists = true }
-    }
+    blocks = {}
+    for i, block in ipairs(room2Data.blocks) do
+        blocks[i] = {
+            x = block.x,
+            z = block.z,
+            width = 1.2,
+            height = 1.2,
+            depth = 1.2,
+            exists = true
+        }
+    end
     
     -- Check if boxes are already in inventory and mark them as not existing in world
     for i = 1, #blocks do
@@ -87,6 +104,20 @@ function room2_scene:load()
         { x = -6, z = 6 },
         { x = 3, z = 5 },
         { x = 6, z = 3 }
+    }
+    
+    -- Store key positions
+        key = { 
+        x = room2Data.key.x,
+        z = room2Data.key.z,
+        collected = false
+    }
+    
+    -- Store door positions
+        door = {
+        x = room2Data.door.x,
+        z = room2Data.door.z,
+        locked = true
     }
     
     -- Restore room state if loading from save

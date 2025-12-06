@@ -1,0 +1,15 @@
+{
+  "playerStart": { "x": 0, "z": 0 },
+
+  "cannonball": { "x": 1, "z": 3 },
+  "cannon":     { "x": -6, "z": 0 },
+
+  "door": { "x": 0, "z": -6, "locked": true },
+
+  "key": {
+    "x": 0,
+    "z": -4.5,
+    "visible": false,
+    "collected": false
+  }
+}

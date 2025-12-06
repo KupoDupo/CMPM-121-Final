@@ -2,6 +2,7 @@ local Character = require("character")
 local Cannonball = require("cannonball")
 local Cannon = require("cannon")
 local Inventory = require("inventory")
+local json = require("dkjson")
 
 local room1_scene = {}
 local player
@@ -14,7 +15,7 @@ local door_object
 local wall_left
 local wall_right
 local key_object
-local key_item = { x = 0, z = -4.5, visible = false, collected = false }
+local key_item
 local worldBounds = { minX = -12, maxX = 12, minZ = -12, maxZ = 12 }
 local inventory
 local cannonLoaded = false
@@ -50,6 +51,22 @@ end
 
 function room1_scene:load()
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
+    
+    -- Load Room 1 DSL (JSON)
+    local file = love.filesystem.read("game_data/room1.json")
+    local room1Data = json.decode(file)
+    
+    if not file then
+        error("Could not read game_data/room1.json. Check path + spelling.")
+    end
+
+    local room1Data, pos, err = json.decode(file)
+
+    if not room1Data then
+        error("JSON decode error in room1.json: " .. tostring(err))
+    end
+
+    print("Loaded Room1 JSON successfully!")
 
     inventory = globalInventory  -- Use global inventory
     
@@ -61,30 +78,42 @@ function room1_scene:load()
     end
     
     -- Restore player position from save or use default
-    local startX, startY, startZ = 0, 0, 0
-    print("=== ROOM1 LOAD ===")
-    print("Checking for _G.savedPlayerPosition:", _G.savedPlayerPosition and "YES" or "NO")
+    local startX = room1Data.playerStart.x
+    local startY = 0
+    local startZ = room1Data.playerStart.z
+
+    -- If save system has a stored player location, override JSON
     if _G.savedPlayerPosition then
         startX = _G.savedPlayerPosition.x
         startY = _G.savedPlayerPosition.y
         startZ = _G.savedPlayerPosition.z
-        print("Restored player position:", startX, startY, startZ)
-        _G.savedPlayerPosition = nil  -- Clear after use
-    else
-        print("Using default player position")
+        _G.savedPlayerPosition = nil
     end
+
     player = Character.new("Hero", startX, startY, startZ)
-    _G.currentPlayer = player  -- Make globally accessible for save system
+    _G.currentPlayer = player
     
     -- Spawn Cannonball at (3, 3)
-    cannonball = Cannonball.new(1, 3)
+    cannonball = Cannonball.new(room1Data.cannonball.x, room1Data.cannonball.z)
     
     -- Spawn a cannon (we place it to the left)
-    cannon = Cannon.new(-6, 0)
+    cannon = Cannon.new(room1Data.cannon.x, room1Data.cannon.z)
 
     -- Locked door: place at the back of the (smaller) map (moved closer into frame)
-    door = { x = 0, z = -6, locked = true }
+    door = {
+        x = room1Data.door.x,
+        z = room1Data.door.z,
+        locked = room1Data.door.locked
+    }
     
+    -- Key position
+    key_item = {
+        x = room1Data.key.x,
+        z = room1Data.key.z,
+        visible = room1Data.key.visible,
+        collected = room1Data.key.collected
+    }
+        
     -- Restore room state if loading from save
     print("Checking for _G.room1State:", _G.room1State and "YES" or "NO")
     if _G.room1State then
