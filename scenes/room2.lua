@@ -1,5 +1,4 @@
 local Character = require("character")
-local Inventory = require("inventory")
 local json = require("dkjson")
 
 local room2_scene = {}

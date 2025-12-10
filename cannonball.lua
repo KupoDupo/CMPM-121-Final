@@ -44,7 +44,7 @@ function cannonball.new(x, z)
 
     paintRecursive(self.object, mat)
 
-    -- 3. Draw Function (larger scale than the old eyeball)
+    -- Draw Function
     function self:draw()
         if not self.exists then return end
 

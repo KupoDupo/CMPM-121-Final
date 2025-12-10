@@ -1,5 +1,4 @@
 local Character = require("character")
-local Inventory = require("inventory")
 
 local ending_scene = {}
 local player
@@ -28,7 +27,7 @@ function ending_scene:load()
     messageTimer = 5
     fadeIn = 0
     
-    -- Create celebratory particles using old system
+    -- Create celebratory particles
     for i = 1, numParticles do
         table.insert(particles, {
             x = math.random(-8, 8),
@@ -62,7 +61,7 @@ function ending_scene:update(dt)
             messageTimer = messageTimer - dt
         end
         
-        -- Update particles using old system
+        -- Update particles
         for _, p in ipairs(particles) do
             p.x = p.x + p.vx * dt
             p.y = p.y + p.vy * dt

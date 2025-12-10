@@ -1,13 +1,11 @@
 local Character = require("character")
 local Cannonball = require("cannonball")
 local Cannon = require("cannon")
-local Inventory = require("inventory")
 local json = require("dkjson")
 
 local room1_scene = {}
 local player
 local sun
-local item
 local floor_tile
 local cannon
 local door
@@ -66,8 +64,6 @@ function room1_scene:load()
         error("JSON decode error in room1.json: " .. tostring(err))
     end
 
-    print("Loaded Room1 JSON successfully!")
-
     inventory = globalInventory  -- Use global inventory
     
     -- Check if tutorial should be shown
@@ -115,7 +111,6 @@ function room1_scene:load()
     }
         
     -- Restore room state if loading from save
-    print("Checking for _G.room1State:", _G.room1State and "YES" or "NO")
     if _G.room1State then
         local s = _G.room1State
 
@@ -144,7 +139,6 @@ function room1_scene:load()
         -- cleanup
         _G.room1State = nil
     end
-    print("==================")
 
     -- create a dedicated object for the door so it doesn't reuse the floor tile transforms
     door_object = dream:loadObject("assets/cube")

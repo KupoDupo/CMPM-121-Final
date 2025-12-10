@@ -1,5 +1,4 @@
 local Character = require("character")
-local Inventory = require("inventory")
 
 local room3_scene = {}
 local player
@@ -11,8 +10,6 @@ local wall_left
 local wall_right
 local worldBounds = { minX = -12, maxX = 12, minZ = -12, maxZ = 12 }
 local inventory
-local mouseWorldX, mouseWorldZ = 0, 0
-local isHoveringInteractive = false
 local interactionMessage = ""
 local messageTimer = 0
 
@@ -405,13 +402,6 @@ function room3_scene:mousepressed(mx,my,button)
 
         player:walkTo(targetX,targetZ)
     end
-end
-
-function room3_scene:mousemoved(mx,my)
-    local w,h = love.graphics.getDimensions()
-    local nx = (mx/w)*2 - 1
-    local nz = (my/h)*2 - 1
-    mouseWorldX, mouseWorldZ = nx*9, nz*9
 end
 
 function room3_scene:mousereleased(mx,my,button)

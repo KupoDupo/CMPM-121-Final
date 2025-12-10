@@ -77,61 +77,20 @@ end
 function menu_scene:rebuildButtons()
     buttons = {}
     
-    print("=== MENU - Checking for saves ===")
-    print("Save directory: " .. love.filesystem.getSaveDirectory())
-    print("Looking for: " .. SaveManager.autoSaveFile)
-    
-    -- List all files
-    local files = love.filesystem.getDirectoryItems("")
-    print("Files in save directory (" .. #files .. " files):")
-    for _, file in ipairs(files) do
-        local info = love.filesystem.getInfo(file)
-        if info then
-            print("  - " .. file .. " (" .. info.size .. " bytes)")
-        end
-    end
-    
     -- Check if there's a valid auto-save available
     local hasAutoSave = false
     if SaveManager.hasSave(SaveManager.autoSaveFile) then
-        print("✓ Auto-save file found!")
-        -- Try to load it to verify it's valid
         local testLoad = SaveManager.loadAutoSave()
-        if testLoad then
-            print("Loaded state contents:")
-            print("  version:", testLoad.version)
-            print("  timestamp:", testLoad.timestamp)
-            print("  currentScene:", testLoad.currentScene)
-            print("  playerPosition:", testLoad.playerPosition and "YES" or "NO")
-            print("  inventory:", testLoad.inventory and #testLoad.inventory or "NO")
-            print("  sceneStates:", testLoad.sceneStates and "YES" or "NO")
-            
-            if testLoad.currentScene then
-                hasAutoSave = true
-                print("✓ Auto-save is valid, scene: " .. testLoad.currentScene)
-            else
-                print("✗ Auto-save missing currentScene field")
-            end
-        else
-            print("✗ Auto-save exists but failed to load")
+        if testLoad and testLoad.currentScene then
+            hasAutoSave = true
         end
-    else
-        print("✗ No auto-save file found")
     end
-    
-    print("Show Continue button: " .. tostring(hasAutoSave))
-    print("=================================")
     
     -- Create the "Continue" button if auto-save exists and is valid
     if hasAutoSave then
         table.insert(buttons, newButton(100, 100, 150, 40, _G.localization:get("menu_continue"), function()
-            print("=== CONTINUE BUTTON CLICKED ===")
             local state = SaveManager.loadAutoSave()
             if state and state.currentScene then
-                print("Loaded state for scene: " .. state.currentScene)
-                print("Player position:", state.playerPosition.x, state.playerPosition.y, state.playerPosition.z)
-                print("Inventory items:", #(state.inventory or {}))
-                
                 -- Set the global player reference BEFORE restoring state
                 _G.currentPlayer = nil  -- Will be created by scene
                 
@@ -141,19 +100,11 @@ function menu_scene:rebuildButtons()
                 -- Restore the game state
                 SaveManager.restoreGameState(state)
                 
-                print("Set _G.savedPlayerPosition:", _G.savedPlayerPosition and "YES" or "NO")
-                if _G.room1State then print("Room1 state restored") end
-                if _G.room2State then print("Room2 state restored") end
-                if _G.room3State then print("Room3 state restored") end
-                
                 -- Load the scene
                 scenery.setScene(state.currentScene)
                 
                 -- Clear restoration flag after scene is loaded
                 setRestoringGame(false)
-                
-                print("Scene set to:", state.currentScene)
-                print("===============================")
             else
                 print("Failed to load auto-save - file may be corrupted")
                 -- Start new game as fallback
@@ -170,6 +121,9 @@ function menu_scene:rebuildButtons()
     -- Create the "New Game" button
     local newGameY = hasAutoSave and 160 or 100
     table.insert(buttons, newButton(100, newGameY, 150, 40, _G.localization:get("menu_new_game"), function()
+        -- Delete existing auto-save
+        SaveManager.deleteSave(SaveManager.autoSaveFile)
+        
         -- Clear any existing save state
         _G.room1State = nil
         _G.room2State = nil
